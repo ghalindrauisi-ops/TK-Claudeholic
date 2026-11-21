@@ -1,0 +1,672 @@
+/* =====================================================================
+       1. VARIABEL WARNA & TEMA (TERANG / GELAP)
+       Memudahkan pengaturan palet warna UI di satu tempat.
+    ===================================================================== */
+    :root {
+      --bg: #f4f6fb;
+      --card: #ffffff;
+      --tx: #141824;
+      --mu: #64748b;
+      --bd: #e2e8f0;
+      --ac: #f0a800;
+      --ac-tx: #231900;
+      --bl: #1f3b9d;
+      --rd: #c0202e;
+      --gr: #15803d;
+      --sh: 0 6px 24px rgba(15, 23, 42, 0.07);
+    }
+    [data-theme="dark"] {
+      --bg: #0b101d;
+      --card: #131b2e;
+      --tx: #f1f5f9;
+      --mu: #94a3b8;
+      --bd: #1e293b;
+      --ac: #fbbf24;
+      --ac-tx: #1e1500;
+      --bl: #60a5fa;
+      --rd: #f87171;
+      --gr: #4ade80;
+      --sh: 0 8px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    /* =====================================================================
+       2. RESET DASAR & KERANGKA MOBILE-FIRST
+       Mengatur agar halaman nyaman di layar ponsel maupun desktop.
+    ===================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #e2e8f0;
+      color: var(--tx);
+      font: 14.5px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    [data-theme="dark"] body { background: #060912; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+
+    .app-shell {
+      width: 100%;
+      max-width: 500px;
+      min-height: 100vh;
+      margin: 0 auto;
+      background: var(--bg);
+      position: relative;
+      padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+      box-shadow: 0 0 40px rgba(15, 23, 42, 0.12);
+    }
+    @media (min-width: 540px) {
+      .app-shell {
+        border-left: 1px solid var(--bd);
+        border-right: 1px solid var(--bd);
+      }
+    }
+
+    /* =====================================================================
+       3. HEADER NAVIGASI ATAS (STICKY)
+    ===================================================================== */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 35;
+      background: var(--card);
+      border-bottom: 1px solid var(--bd);
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+    }
+    .nav-inner {
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .lg {
+      font-weight: 900;
+      font-size: 18px;
+      text-decoration: none;
+      color: var(--tx);
+      letter-spacing: -0.3px;
+    }
+    .lg span { color: var(--ac); }
+    .nav-right { display: flex; align-items: center; gap: 6px; }
+    .gps-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 99px;
+      background: rgba(192, 32, 46, 0.1);
+      color: var(--rd);
+    }
+    .btn-toko {
+      background: #141b38;
+      color: #ffd24d;
+      border: 0;
+      text-decoration: none;
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 11.5px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #th {
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+    }
+
+    /* =====================================================================
+       4. KARTU KONTEN, TOMBOL & TAB FILTER
+    ===================================================================== */
+    .wrap { padding: 12px 14px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: var(--sh);
+      margin-bottom: 13px;
+    }
+    .mu { color: var(--mu); font-size: 12.5px; }
+
+    .btn {
+      border: 0;
+      background: var(--ac);
+      color: var(--ac-tx);
+      font-weight: 800;
+      border-radius: 11px;
+      padding: 9px 13px;
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.bl { background: var(--bl); color: #fff; }
+    .btn.gr { background: var(--gr); color: #fff; }
+    .btn.rd { background: var(--rd); color: #fff; }
+    .btn.g { background: var(--bg); border: 1px solid var(--bd); color: var(--tx); }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .chip {
+      border: 1px solid var(--bd);
+      background: var(--card);
+      color: var(--tx);
+      padding: 7px 12px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .chip.on { background: var(--bl); color: #fff; border-color: var(--bl); }
+
+    /* =====================================================================
+       5. PETA INTERAKTIF RUTE BIKUN UI
+    ===================================================================== */
+    .map-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 10 / 11;
+      background: #f8fafc;
+      border: 1px solid var(--bd);
+      border-radius: 16px;
+      overflow: hidden;
+      touch-action: none;
+    }
+    [data-theme="dark"] .map-box { background: #0f172a; }
+    .map-box svg { width: 100%; height: 100%; display: block; }
+    .map-ctrls {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 10;
+    }
+    .map-ctrls button {
+      border: 1px solid var(--bd);
+      background: var(--card);
+      color: var(--tx);
+      border-radius: 9px;
+      padding: 6px 9px;
+      font-weight: 800;
+      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .node-pin { cursor: pointer; transition: transform 0.15s; }
+    .node-pin:hover circle.ring { stroke: #f0a800; stroke-width: 5; }
+
+    /* =====================================================================
+       6. DENAH KANTIN FAKULTAS (MUNCUL KONTEKSTUAL SAAT FAKULTAS DIPILIH)
+    ===================================================================== */
+    #denah {
+      display: none;
+      border: 2px solid var(--bl);
+      animation: fadeSlideIn 0.25s ease-out;
+    }
+    #denah.on { display: block; }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .floorplan-wrap {
+      background: var(--bg);
+      border: 2px solid var(--bd);
+      border-radius: 18px;
+      padding: 12px;
+      position: relative;
+    }
+    .fp-door {
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 99px;
+      background: rgba(31, 59, 157, 0.12);
+      color: var(--bl);
+      border: 1.5px dashed var(--bl);
+      margin: 0 auto 10px;
+      width: fit-content;
+    }
+    .fp-door.exit {
+      background: rgba(21, 128, 61, 0.1);
+      color: var(--gr);
+      border-color: var(--gr);
+      margin: 10px auto 0;
+    }
+    .fp-corridor-label {
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--mu);
+      margin: 4px 0 8px;
+    }
+    .fp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+    /* Efek menonjol saat kursor mendekat ke kotak stan tenant */
+    .fp-stall {
+      background: var(--card);
+      border: 1.5px solid var(--bd);
+      border-radius: 13px;
+      padding: 10px;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      position: relative;
+    }
+    .fp-stall:hover, .fp-stall:focus-visible {
+      transform: translateY(-4px) scale(1.03);
+      border-color: var(--ac);
+      box-shadow: 0 10px 22px rgba(240, 168, 0, 0.25);
+      z-index: 3;
+    }
+    .fp-center-zone {
+      grid-column: 1 / -1;
+      background: repeating-linear-gradient(45deg, rgba(148,163,184,0.07), rgba(148,163,184,0.07) 8px, transparent 8px, transparent 16px);
+      border: 1.5px dashed var(--bd);
+      border-radius: 14px;
+      padding: 10px;
+      margin: 2px 0;
+    }
+    .fp-tables {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .fp-table-unit {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 9px;
+      padding: 5px 4px;
+      text-align: center;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: var(--tx);
+    }
+    .fp-facilities {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .fp-fac-box {
+      background: rgba(14, 165, 233, 0.09);
+      border: 1px solid rgba(14, 165, 233, 0.28);
+      border-radius: 9px;
+      padding: 6px 5px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #0369a1;
+    }
+    [data-theme="dark"] .fp-fac-box { color: #7dd3fc; }
+    .fp-fac-box.trash {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: #b45309;
+    }
+    [data-theme="dark"] .fp-fac-box.trash { color: #fcd34d; }
+    .fp-fac-box.pickup {
+      background: rgba(21, 128, 61, 0.1);
+      border-color: rgba(21, 128, 61, 0.3);
+      color: var(--gr);
+    }
+
+    /* =====================================================================
+       7. KOLASE KANTIN & KARTU TENANT
+    ===================================================================== */
+    .fac-card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--sh);
+    }
+    .collage-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin: 10px 0;
+    }
+    .col-tile {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      background: #e2e8f0;
+    }
+    .col-tile img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.25s; }
+    .col-tile:hover img { transform: scale(1.07); }
+    .col-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10, 15, 28, 0.92) 15%, rgba(10, 15, 28, 0.25) 75%, transparent);
+      color: #fff;
+      padding: 7px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .col-tile:hover .col-overlay, .col-tile:focus-within .col-overlay { opacity: 1; }
+    .col-overlay b { font-size: 11px; line-height: 1.2; display: block; }
+    .col-overlay span { font-size: 10px; color: #ffd24d; font-weight: 800; }
+    .col-overlay small { font-size: 9.5px; color: #cbd5e1; }
+
+    .t-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 6px;
+    }
+    .t-card {
+      flex: 0 0 220px;
+      scroll-snap-align: start;
+      background: var(--bg);
+      border: 1.5px solid var(--bd);
+      border-radius: 14px;
+      padding: 10px;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .t-card:hover { transform: translateY(-2px); border-color: var(--bl); }
+    .t-mini-collage {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      height: 58px;
+      border-radius: 9px;
+      overflow: hidden;
+      margin-bottom: 7px;
+    }
+    .t-mini-collage img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* =====================================================================
+       8. DAFTAR MENU, LOVE ❤️ & STOK HABIS
+    ===================================================================== */
+    .mi {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--bd);
+      border-radius: 14px;
+      background: var(--bg);
+      margin-bottom: 8px;
+    }
+    .mi.soldout { opacity: 0.68; border-color: #fca5a5; }
+    .ph.m {
+      width: 62px;
+      height: 62px;
+      border-radius: 11px;
+      overflow: hidden;
+      flex: none;
+      background: #cbd5e1;
+    }
+    .ph.m img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .mi .x { flex: 1; min-width: 0; }
+    .love-btn {
+      border: 1px solid var(--bd);
+      background: var(--card);
+      border-radius: 99px;
+      padding: 4px 9px;
+      font-size: 11.5px;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .love-btn.loved { border-color: #fda4af; background: #fff1f2; color: #be123c; }
+    .sold-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 900;
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .badge-st {
+      display: inline-block;
+      font-size: 10.5px;
+      font-weight: 800;
+      background: rgba(21, 128, 61, 0.14);
+      color: var(--gr);
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+    .fac-pill {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      background: rgba(31, 59, 157, 0.12);
+      color: var(--bl);
+      padding: 3px 9px;
+      border-radius: 99px;
+      margin-bottom: 4px;
+    }
+
+    /* =====================================================================
+       9. KEPADATAN KANTIN, GRAFIK PENGELUARAN & MODAL
+    ===================================================================== */
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin: 10px 0;
+    }
+    .kpi > div {
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+    }
+    .kpi small { display: block; font-size: 10.5px; color: var(--mu); }
+    .bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 110px;
+      padding: 10px 8px 4px;
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 13px;
+      margin: 8px 0;
+    }
+    .bc { flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; }
+    .bc i { width: 100%; max-width: 24px; background: var(--bl); border-radius: 5px 5px 2px 2px; display: block; }
+    .bc small { font-size: 9px; font-weight: 800; color: var(--mu); }
+    .bc span { font-size: 9.5px; color: var(--mu); }
+
+    .md {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(15, 23, 42, 0.58);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .md.on { display: flex; }
+    .md-sheet {
+      width: 100%;
+      max-width: 500px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: var(--card);
+      border-radius: 22px 22px 0 0;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 -10px 35px rgba(0, 0, 0, 0.25);
+    }
+    .md-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      border: 1px solid var(--bd);
+      background: var(--bg);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: 800;
+    }
+    .chat-box {
+      background: var(--bg);
+      border: 1px solid var(--bd);
+      border-radius: 13px;
+      padding: 10px;
+      height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .chat-msg { max-width: 82%; padding: 8px 11px; border-radius: 13px; font-size: 13px; }
+    .chat-msg.me { align-self: flex-end; background: var(--bl); color: #fff; }
+    .chat-msg.them { align-self: flex-start; background: var(--card); border: 1px solid var(--bd); }
+    .chat-meta { font-size: 10px; opacity: 0.78; margin-top: 2px; }
+
+    /* =====================================================================
+       10. FLOATING CART BAR, BOTTOM NAV & PORTAL PENJUAL TERINTEGRASI
+    ===================================================================== */
+    #cbar {
+      position: fixed;
+      bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 476px;
+      background: #141b38;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 15px;
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 40;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+    }
+    #cbar.on { display: flex; }
+
+    .bnav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 500px;
+      background: var(--card);
+      border-top: 1px solid var(--bd);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+      z-index: 45;
+    }
+    .bnav button, .bnav a {
+      border: 0;
+      background: transparent;
+      color: var(--mu);
+      text-decoration: none;
+      font-size: 10.5px;
+      font-weight: 800;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .bnav button.on { color: var(--bl); }
+    .bnav span.ic { font-size: 17px; line-height: 1.1; }
+
+    #seller-portal-view {
+      display: none;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    #seller-portal-view.on { display: block; }
+    .sp-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #141b38;
+      color: #fff;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .sp-card {
+      background: var(--card);
+      border: 1px solid var(--bd);
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--sh);
+    }
+    .sp-acc-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1.5px solid var(--bd);
+      border-radius: 13px;
+      background: var(--bg);
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .sp-acc-item:hover { border-color: var(--bl); }
+    .sp-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bl);
+      color: #fff;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      flex: none;
+    }
+
+    .toast {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #141824;
+      color: #fff;
+      padding: 9px 15px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      z-index: 90;
+      display: none;
+      max-width: 90%;
+      text-align: center;
+    }
+    .toast.on { display: block; }

@@ -1,11 +1,143 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <!-- Pengaturan karakter UTF-8 & tampilan responsif mobile-first -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+  <title>KantinUI – Peta Bikun UI, Denah Kantin &amp; Portal Penjual</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
+<!-- =====================================================================
+       HALAMAN UTAMA PEMBELI (MAHASISWA UI)
+  ===================================================================== -->
+  <div class="app-shell" id="buyer-app-shell">
+    <header class="nav">
+      <div class="nav-inner">
+        <a href="#top" class="lg">🍛 Kantin<span>UI</span></a>
+        <div class="nav-right">
+          <span class="gps-pill" id="py-badge">❤️ Rekomendasi Love</span>
+          <a href="portal_penjual.html" onclick="return bukaPortalPenjual(event)" class="btn-toko">🏪 Portal Penjual ↗</a>
+          <button type="button" id="th" title="Ganti Tema" aria-label="Ganti Tema">🌓</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap" id="top">
+      <!-- Pelacak Pesanan Aktif & Tombol Chat Penjual -->
+      <section id="order-tracker" style="display:none"></section>
+
+      <!-- Peta Rute Bikun UI -->
+      <section class="card" id="peta">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+          <div>
+            <h2 style="margin:0;font-size:16px">🗺️ Peta Rute Bikun &amp; Kantin UI</h2>
+            <div class="mu" id="route-info">Ketuk pin fakultas untuk melihat kantin &amp; denahnya</div>
+          </div>
+          <button type="button" class="chip" onclick="focusMapCenter()">Reset</button>
+        </div>
+
+        <div class="tabs" style="margin-bottom:8px">
+          <button type="button" class="chip on" id="mode-kantin" onclick="setMapMode('kantin')">🍛 Lihat Kantin</button>
+          <button type="button" class="chip" id="mode-rute" onclick="setMapMode('rute')">🚌 Cek Jarak 2 Titik</button>
+        </div>
+
+        <div class="map-box" id="map-box">
+          <div class="map-ctrls">
+            <button type="button" onclick="zoomMap(0.82)">+</button>
+            <button type="button" onclick="zoomMap(1.22)">−</button>
+            <button type="button" onclick="focusMapCenter()">↺</button>
+          </div>
+          <svg id="ui-map" viewBox="40 40 920 1120" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+
+      <!-- Daftar Kantin & Tenant Terfavorit (Berdasarkan Jumlah Love ❤️) -->
+      <section id="kantin">
+        <div class="card" style="padding:12px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+            <b>❤️ Kantin &amp; Tenant Terfavorit</b>
+            <span class="mu" id="fac-filter-label">Semua Fakultas</span>
+          </div>
+          <input id="q" placeholder="Cari menu, Bu Imi, geprek, soto, takor..." oninput="render()"
+            style="width:100%;padding:9px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg);margin-bottom:8px">
+          <div class="tabs" id="cat-tabs" style="margin-bottom:0"></div>
+        </div>
+        <div id="list"></div>
+      </section>
+
+      <!-- Denah Kantin Fakultas (Otomatis Muncul Saat Kantin Fakultas Dipilih) -->
+      <section class="card" id="denah">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+          <div>
+            <h2 style="margin:0;font-size:16px" id="denah-title">📐 Denah Kantin Fakultas</h2>
+            <div class="mu">Arahkan kursor / ketuk kotak stan untuk melihat menu</div>
+          </div>
+          <button type="button" class="chip" onclick="tutupDenah()">✕ Tutup Denah</button>
+        </div>
+        <div id="denah-board"></div>
+      </section>
+
+      <!-- Info Estimasi Kepadatan Kantin -->
+      <section class="card" id="ramai">
+        <h2 style="margin:0 0 4px;font-size:16px">📊 Estimasi Kepadatan Kantin Saat Ini</h2>
+        <div class="mu">Pantau jam ramai makan siang sebelum berangkat naik Bikun</div>
+        <div id="crowd-list" style="margin-top:10px"></div>
+      </section>
+
+      <!-- Catatan Pengeluaran Mahasiswa -->
+      <section class="card" id="catat">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <h2 style="margin:0;font-size:16px">💰 Catatan Pengeluaran Makan</h2>
+            <div class="mu">Otomatis tercatat setiap pembayaran QRIS KantinUI</div>
+          </div>
+          <button type="button" class="btn g" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="bukaTambahCatat()">+ Catat</button>
+        </div>
+        <div class="kpi" id="exp-kpi"></div>
+        <div class="bars" id="exp-bars"></div>
+        <div id="exp-list"></div>
+      </section>
+    </main>
+
+    <!-- Bilah Keranjang Melayang -->
+    <div id="cbar">
+      <div>
+        <b id="cb-cnt">0 item</b>
+        <div style="font-size:11.5px;color:#cbd5e1" id="cb-tot">Rp 0</div>
+      </div>
+      <button type="button" class="btn" onclick="openCart()">Lihat Keranjang →</button>
+    </div>
+
+    <!-- Navigasi Bawah -->
+    <nav class="bnav">
+      <button type="button" class="on" onclick="navJump('#peta', this)"><span class="ic">🗺️</span><span>Peta</span></button>
+      <button type="button" onclick="navJump('#kantin', this)"><span class="ic">🍛</span><span>Kantin</span></button>
+      <button type="button" onclick="navJump('#catat', this)"><span class="ic">💰</span><span>Catatan</span></button>
+      <a href="portal_penjual.html" onclick="return bukaPortalPenjual(event)"><span class="ic">🏪</span><span>Penjual</span></a>
+    </nav>
+  </div>
+
+  <!-- =====================================================================
+       PORTAL MITRA PENJUAL TERINTEGRASI
+  ===================================================================== -->
+  <div class="app-shell" id="seller-portal-view">
+    <header class="sp-topbar">
+      <div style="font-weight:800;font-size:16px">🏪 Portal Penjual <span style="color:#ffd24d">KantinUI</span></div>
+      <button type="button" onclick="tutupPortalPenjual()" style="background:rgba(255,255,255,0.16);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:7px 11px;border-radius:10px;font-size:11.5px;font-weight:800">🍛 Web Pembeli ↗</button>
+    </header>
+    <main class="wrap" id="sp-app-body"></main>
+  </div>
+
+  <!-- Modal Bottom Sheet -->
+  <div class="md" id="md" onclick="if(event.target===this)hideModal()">
+    <div class="md-sheet">
+      <button type="button" class="md-close" onclick="hideModal()">✕</button>
+      <div id="mb"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script src="script.js"></script>
 </body>
 </html>
