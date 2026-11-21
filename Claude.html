@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClaudeHolic — Di Balik KantinUI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-deep: #060b19;
+      --bg-surface: #0d1630;
+      --card-glass: rgba(18, 30, 64, 0.72);
+      --border-glow: rgba(56, 189, 248, 0.3);
+      --accent-blue: #38bdf8;
+      --accent-cyan: #22d3ee;
+      --accent-gold: #fbbf24;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-deep);
+      background-image:
+        radial-gradient(circle at 15% 15%, rgba(29, 78, 216, 0.25), transparent 40%),
+        radial-gradient(circle at 85% 75%, rgba(14, 165, 233, 0.2), transparent 45%);
+      color: var(--text-main);
+      overflow-x: hidden;
+      line-height: 1.65;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Ambient Glowing Orbs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(110px);
+      z-index: -1;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    .blob-1 { width: 380px; height: 380px; background: #1d4ed8; top: -110px; left: -110px; }
+    .blob-2 { width: 340px; height: 340px; background: #0284c7; bottom: 5%; right: -90px; }
+    .blob-3 { width: 250px; height: 250px; background: #f59e0b; top: 45%; left: 40%; opacity: 0.14; }
+
+    /* Sticky Glass Navbar */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(16px);
+      background: rgba(6, 11, 25, 0.72);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .nav-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 16px 22px;
+    }
+    .brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff, var(--accent-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      cursor: pointer;
+      border: none;
+      white-space: nowrap;
+    }
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .btn-ghost:hover, .btn-ghost:active {
+      background: rgba(255, 255, 255, 0.16);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 8px 25px rgba(14, 165, 233, 0.35);
+    }
+    .btn-primary:hover, .btn-primary:active {
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 12px 32px rgba(14, 165, 233, 0.55);
+    }
+
+    .btn-saran {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #090d16;
+      box-shadow: 0 8px 24px rgba(251, 191, 36, 0.3);
+    }
+    .btn-saran:hover, .btn-saran:active {
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 12px 30px rgba(251, 191, 36, 0.52);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 22px;
+    }
+
+    /* Section 1: Hero & Alur Singkat KantinUI */
+    .hero {
+      text-align: center;
+      padding: 56px 0 44px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 15px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid var(--border-glow);
+      color: var(--accent-blue);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2.1rem, 6vw, 3.6rem);
+      line-height: 1.15;
+      margin-bottom: 18px;
+    }
+    .hero h1 span {
+      background: linear-gradient(90deg, var(--accent-blue), var(--accent-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 670px;
+      margin: 0 auto 30px;
+      color: var(--text-muted);
+      font-size: clamp(0.96rem, 2.5vw, 1.08rem);
+    }
+
+    /* Alur KantinUI (Flow Steps) */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 44px 0 24px;
+      text-align: left;
+    }
+    .flow-card {
+      background: var(--card-glass);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      backdrop-filter: blur(14px);
+      border-radius: 22px;
+      padding: 22px;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    .flow-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-blue);
+      box-shadow: 0 14px 32px rgba(14, 165, 233, 0.18);
+    }
+    .flow-num {
+      width: 34px; height: 34px;
+      border-radius: 11px;
+      background: rgba(56, 189, 248, 0.18);
+      color: var(--accent-blue);
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px;
+      font-size: 0.88rem;
+    }
+    .flow-card h3 { font-size: 1rem; margin-bottom: 6px; }
+    .flow-card p { font-size: 0.86rem; color: var(--text-muted); margin: 0; }
+
+    /* Section 2: More Info (Kenapa KantinUI Dibuat) */
+    #more-info {
+      padding: 56px 0;
+    }
+    .story-box {
+      background: linear-gradient(145deg, rgba(14, 24, 52, 0.94), rgba(23, 37, 84, 0.72));
+      border: 1px solid var(--border-glow);
+      border-radius: 28px;
+      padding: 42px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+    }
+    .story-box h2 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(1.6rem, 4vw, 2.05rem);
+      margin-bottom: 14px;
+      color: #fff;
+    }
+    .story-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 30px;
+      align-items: center;
+      margin-top: 22px;
+    }
+    .story-text p {
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      font-size: 0.96rem;
+    }
+    .highlight-list {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+    .highlight-item {
+      background: rgba(6, 11, 25, 0.72);
+      border-left: 4px solid var(--accent-gold);
+      padding: 15px 18px;
+      border-radius: 15px;
+    }
+    .highlight-item strong { display: block; color: var(--accent-gold); font-size: 0.94rem; margin-bottom: 3px; }
+    .highlight-item span { font-size: 0.86rem; color: var(--text-muted); }
+
+    /* Section 3: Members ClaudeHolic (Foto Besar + Sejajar Berderet + Efek 3D Canggih) */
+    #members {
+      padding: 52px 0 96px;
+      text-align: center;
+    }
+    .members-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(2rem, 5vw, 2.6rem);
+      margin-bottom: 8px;
+    }
+    .members-sub {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin-bottom: 44px;
+    }
+
+    /* Selalu sejajar berderet 3 kolom */
+    .members-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      align-items: stretch;
+      perspective: 1200px;
+    }
+
+    .member-card {
+      background: linear-gradient(165deg, rgba(22, 37, 78, 0.85), rgba(11, 19, 43, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      padding: 24px 20px 28px;
+      backdrop-filter: blur(16px);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  box-shadow 0.35s ease,
+                  border-color 0.35s ease;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      transform-style: preserve-3d;
+    }
+
+    /* Efek cahaya kilau halus saat hover */
+    .member-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(56, 189, 248, 0.22), transparent 65%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+    .member-card:hover::before {
+      opacity: 1;
+    }
+
+    /* Efek membesar & menonjol saat kursor diarahkan / disentuh */
+    .member-card:hover,
+    .member-card:active {
+      transform: translateY(-14px) scale(1.05);
+      border-color: var(--accent-blue);
+      box-shadow: 0 26px 58px rgba(14, 165, 233, 0.36), 0 0 0 1px rgba(56, 189, 248, 0.5);
+      z-index: 10;
+    }
+
+    /* Frame Foto Besar & Jelas */
+    .photo-frame {
+      width: 100%;
+      aspect-ratio: 4 / 4.3;
+      border-radius: 20px;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-gold));
+      margin-bottom: 18px;
+      overflow: hidden;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      transition: transform 0.38s ease;
+    }
+    .member-card:hover .photo-frame {
+      transform: scale(1.03);
+    }
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 15%;
+      border-radius: 17px;
+      display: block;
+      background: #172554;
+    }
+
+    .member-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+    .member-role {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, 0.16);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: var(--accent-blue);
+      font-size: 0.84rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+    .ig-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.07);
+      color: #f1f5f9;
+      text-decoration: none;
+      font-size: 0.86rem;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s ease;
+    }
+    .ig-link span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .ig-link:hover, .ig-link:active {
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      color: #fff;
+      border-color: transparent;
+      transform: translateY(-2px);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 34px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* Responsif Tablet & Mobile */
+    @media (max-width: 900px) {
+      .flow-grid { grid-template-columns: repeat(2, 1fr); }
+      .story-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      .nav-inner { padding: 12px 14px; }
+      .btn { padding: 8px 13px; font-size: 0.8rem; }
+      .container { padding: 0 12px; }
+      .flow-grid { grid-template-columns: 1fr; gap: 12px; }
+      .story-box { padding: 24px 18px; border-radius: 22px; }
+
+      /* Tetap sejajar berderet 3 kolom di layar HP dengan foto proporsional besar */
+      .members-row {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .member-card {
+        padding: 10px 8px 14px;
+        border-radius: 18px;
+      }
+      .member-card:hover,
+      .member-card:active {
+        transform: translateY(-6px) scale(1.04);
+      }
+      .photo-frame {
+        aspect-ratio: 1 / 1.15;
+        border-radius: 13px;
+        padding: 2px;
+        margin-bottom: 10px;
+      }
+      .photo-frame img {
+        border-radius: 11px;
+      }
+      .member-name {
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+      }
+      .member-role {
+        font-size: 0.63rem;
+        padding: 3px 7px;
+        margin-bottom: 10px;
+        line-height: 1.25;
+      }
+      .ig-link {
+        padding: 6px 6px;
+        font-size: 0.65rem;
+        border-radius: 9px;
+        gap: 4px;
+      }
+      .ig-link svg {
+        width: 12px;
+        height: 12px;
+        flex-shrink: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <!-- Navbar -->
+  <nav>
+    <div class="nav-inner">
+      <div class="brand">✦ ClaudeHolic</div>
+      <div class="nav-actions">
+        <a href="/" class="btn btn-ghost">← KantinUI</a>
+        <!-- GANTI LINK GOOGLE FORM ANDA DI HREF DI BAWAH INI -->
+        <a href="https://forms.gle/LINK-GOOGLE-FORM-ANDA" target="_blank" rel="noopener noreferrer" class="btn btn-saran">
+          💬 Saran
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Hero & Alur Singkat KantinUI -->
+    <section class="hero">
+      <div class="pill">PROYEK DDP • UNIVERSITAS INDONESIA</div>
+      <h1>Apa Itu <span>KantinUI</span>?</h1>
+      <p>
+        KantinUI adalah platform eksplorasi kuliner, pemetaan rute Bikun terdekat, dan informasi lengkap kantin fakultas hingga perpustakaan di Universitas Indonesia dalam satu layar yang cepat dan praktis.
+      </p>
+
+      <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+        <a href="#more-info" class="btn btn-primary">More Info ↓</a>
+        <a href="https://forms.gle/LINK-GOOGLE-FORM-ANDA" target="_blank" rel="noopener noreferrer" class="btn btn-saran">
+          ✨ Kirim Saran
+        </a>
+      </div>
+
+      <!-- Alur Cara Kerja Singkat -->
+      <div class="flow-grid">
+        <div class="flow-card">
+          <div class="flow-num">01</div>
+          <h3>Cari &amp; Filter Kantin</h3>
+          <p>Telusuri menu dari berbagai kantin fakultas UI berdasarkan kategori makanan, harga, atau lokasi.</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">02</div>
+          <h3>Cek Rute Bikun &amp; Denah</h3>
+          <p>Lihat halte Bikun terdekat beserta estimasi jarak agar tidak salah turun menuju kantin tujuan.</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">03</div>
+          <h3>Pesan Tanpa Antre Lama</h3>
+          <p>Masukkan menu ke keranjang, pilih metode pengambilan, dan kirim pesanan langsung ke penjual.</p>
+        </div>
+        <div class="flow-card">
+          <div class="flow-num">04</div>
+          <h3>Pantau Status Pesanan</h3>
+          <p>Penjual menerima pesanan secara real-time melalui portal khusus dan mahasiswa tinggal mengambilnya.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- More Info: Latar Belakang Kenapa KantinUI Dibuat (Versi Padat & Singkat) -->
+    <section id="more-info">
+      <div class="story-box">
+        <div class="pill" style="margin-bottom: 10px;">LATAR BELAKANG</div>
+        <h2>Kenapa KantinUI Dibuat?</h2>
+        <div class="story-grid">
+          <div class="story-text">
+            <p>
+              Universitas Indonesia memiliki banyak kantin di tiap fakultas hingga perpustakaan, namun informasi menu, harga, jam buka, dan jaraknya belum terpusat di satu tempat.
+            </p>
+            <p>
+              Dengan waktu istirahat yang singkat, mahasiswa sering ragu mencoba kantin lain karena harus survei langsung dan akhirnya hanya makan di tempat yang sama. Karena itu, kami membuat <strong>KantinUI</strong> untuk menyatukan seluruh informasi kantin UI dalam satu akses praktis.
+            </p>
+          </div>
+          <div class="highlight-list">
+            <div class="highlight-item">
+              <strong>📋 Info Terpusat Tanpa Survei</strong>
+              <span>Cek daftar menu, harga, dan jam buka seluruh kantin fakultas &amp; perpustakaan UI dalam satu layar.</span>
+            </div>
+            <div class="highlight-item">
+              <strong>📍 Jarak &amp; Rute Bikun Jelas</strong>
+              <span>Ketahui estimasi jarak dan rute Bikun terdekat sebelum berangkat di sela waktu istirahat yang singkat.</span>
+            </div>
+            <div class="highlight-item">
+              <strong>🍽️ Eksplorasi Tanpa Ragu</strong>
+              <span>Bantu mahasiswa menemukan variasi makanan baru di luar kantin fakultas sendiri dengan cepat dan yakin.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Members Section (Foto Besar, Sejajar Berderet, Link Foto Karina Sementara) -->
+    <section id="members">
+      <div class="pill">THE CREATORS</div>
+      <h2 class="members-title">ClaudeHolic</h2>
+      <p class="members-sub">Tiga kreator di balik perancangan dan pengembangan KantinUI</p>
+
+      <div class="members-row">
+        <!-- Member 1: Kisah -->
+        <div class="member-card">
+          <div style="width: 100%;">
+            <div class="photo-frame">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg"
+                onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/glass/svg?seed=Kisah';"
+                alt="Foto Kisah"
+              />
+            </div>
+            <div class="member-name">Kisah</div>
+            <div class="member-role">Role nya woi</div>
+          </div>
+          <a href="https://instagram.com/username_kisah" target="_blank" rel="noopener noreferrer" class="ig-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+            <span>@kisah</span>
+          </a>
+        </div>
+
+        <!-- Member 2: Cindy -->
+        <div class="member-card">
+          <div style="width: 100%;">
+            <div class="photo-frame">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg"
+                onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/glass/svg?seed=Cindy';"
+                alt="Foto Cindy"
+              />
+            </div>
+            <div class="member-name">Cindy</div>
+            <div class="member-role">Role nya woi</div>
+          </div>
+          <a href="https://instagram.com/username_cindy" target="_blank" rel="noopener noreferrer" class="ig-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+            <span>@cindy</span>
+          </a>
+        </div>
+
+        <!-- Member 3: Ghalindra -->
+        <div class="member-card">
+          <div style="width: 100%;">
+            <div class="photo-frame">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg"
+                onerror="this.onerror=null;this.src='https://api.dicebear.com/9.x/glass/svg?seed=Ghalindra';"
+                alt="Foto Ghalindra"
+              />
+            </div>
+            <div class="member-name">Ghalindra</div>
+            <div class="member-role">Role nya woi</div>
+          </div>
+          <a href="https://instagram.com/username_ghalindra" target="_blank" rel="noopener noreferrer" class="ig-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+            <span>@ghalindra</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Dibuat oleh <strong>ClaudeHolic</strong> — KantinUI Project</p>
+  </footer>
+
+  <!-- Efek Cahaya Interaktif Mengikuti Kursor pada Kartu Member -->
+  <script>
+    document.querySelectorAll('.member-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        card.style.setProperty('--mx', `${x}%`);
+        card.style.setProperty('--my', `${y}%`);
+      });
+    });
+  </script>
+</body>
+</html>

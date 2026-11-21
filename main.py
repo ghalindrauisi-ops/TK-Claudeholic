@@ -64,5 +64,10 @@ def create_order():
 def serve_index():
     return send_from_directory(".", "index.html")
 
+@app.route("/claudeholic")
+@app.route("/claudeholic.html")
+def serve_claudeholic():
+    return send_from_directory(".", "claudeholic.html")
+
 if __name__ == "__main__":
     app.run(debug=True)
