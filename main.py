@@ -6,6 +6,18 @@ import os
 app = Flask(__name__, static_folder=".", static_url_path="")
 DB_PATH = "kantinui.db"
 
+# Data mitra penjual terdaftar (sinkron dengan REGISTERED_SELLERS di script.js)
+REGISTERED_SELLERS = [
+    { "email": "kantinclaudeholic@gmail.com", "password": "claudeholic", "owner": "Kantin Claudeholic", "tid": 8, "role": "Mitra Utama Terdaftar FIB" },
+    { "email": "warungbuimi.fib@gmail.com",   "password": "123",          "owner": "Bu Imi",             "tid": 8, "role": "Mitra Terdaftar FIB"  },
+    { "email": "ayamgeprek.ft@gmail.com",     "password": "123",          "owner": "Mas Teknik",         "tid": 1, "role": "Mitra Terdaftar FT"   },
+    { "email": "sotobetawi.feb@gmail.com",    "password": "123",          "owner": "Bang Jali",          "tid": 5, "role": "Mitra Terdaftar FEB"  },
+    { "email": "takor.fisip@gmail.com",       "password": "123",          "owner": "Teh Rani Takor",     "tid": 10,"role": "Mitra Terdaftar FISIP"},
+    { "email": "baksomipa.ui@gmail.com",      "password": "123",          "owner": "Cak Eko",            "tid": 15,"role": "Mitra Terdaftar FMIPA"},
+    { "email": "mbakyanti.fib@gmail.com",     "password": "123",          "owner": "Mbak Yanti",         "tid": 19,"role": "Mitra Terdaftar FIB"  },
+    { "email": "satekanhuk.fh@gmail.com",     "password": "123",          "owner": "Pak Haji Sate",      "tid": 13,"role": "Mitra Terdaftar FH"   },
+]
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
@@ -21,6 +33,16 @@ def init_db():
             total INTEGER,
             status TEXT,
             waktu TEXT
+        )
+    ''')
+    # Tabel sesi login mitra penjual
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS seller_sessions (
+            email TEXT PRIMARY KEY,
+            owner TEXT,
+            tid INTEGER,
+            role TEXT,
+            login_at TEXT
         )
     ''')
     conn.commit()

@@ -982,7 +982,7 @@
       // PORTAL PENJUAL TERINTEGRASI (LOGIN GOOGLE TERDAFTAR + PASSWORD)
       // =====================================================================
       const REGISTERED_SELLERS = [
-        { email: "kantinclaudeholic@gmail.com", password: "", owner: "Kantin Claudeholic", tid: 8, role: "Mitra Utama Terdaftar FIB" },
+        { email: "kantinclaudeholic@gmail.com", password: "claudeholic", owner: "Kantin Claudeholic", tid: 8, role: "Mitra Utama Terdaftar FIB" },
         { email: "warungbuimi.fib@gmail.com", password: "123", owner: "Bu Imi", tid: 8, role: "Mitra Terdaftar FIB" },
         { email: "ayamgeprek.ft@gmail.com", password: "123", owner: "Mas Teknik", tid: 1, role: "Mitra Terdaftar FT" },
         { email: "sotobetawi.feb@gmail.com", password: "123", owner: "Bang Jali", tid: 5, role: "Mitra Terdaftar FEB" },
