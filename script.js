@@ -1,1346 +1,1346 @@
-(() => {
-      // Fungsi bantu singkat untuk memilih elemen DOM, format Rupiah, dan tanggal hari ini
-      const $ = id => document.getElementById(id);
-      const rp = n => "Rp " + Number(n || 0).toLocaleString("id-ID");
-      const TD = () => new Date().toISOString().slice(0, 10);
-
-      // Menampilkan notifikasi pop-up singkat di bagian atas layar
-      function toast(msg, ms = 2800) {
-        const el = $("toast");
-        el.innerHTML = msg;
-        el.classList.add("on");
-        clearTimeout(window._tTimer);
-        window._tTimer = setTimeout(() => el.classList.remove("on"), ms);
-      }
-
-      // Tombol pengubah tema terang (Light) dan gelap (Dark)
-      $("th").onclick = () => {
-        const dark = document.documentElement.getAttribute("data-theme") === "dark";
-        document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
-      };
-
-      // Koordinat GPS nyata setiap halte & fakultas di Kampus UI Depok untuk rumus Haversine
-      const GPS_COORDS = {
-        AsramaUI: { lat: -6.3532, lon: 106.8304, label: "Asrama UI" },
-        Menwa: { lat: -6.3568, lon: 106.8318, label: "Menwa" },
-        StasiunUI: { lat: -6.3606, lon: 106.8317, label: "Stasiun UI" },
-        FEB: { lat: -6.3605, lon: 106.8266, label: "Kantin FEB" },
-        FIB: { lat: -6.3635, lon: 106.8272, label: "Kansas FIB" },
-        FISIP: { lat: -6.3627, lon: 106.8295, label: "Takor FISIP" },
-        FPsi: { lat: -6.3633, lon: 106.8304, label: "Kantin FPsi" },
-        FT: { lat: -6.3621, lon: 106.8242, label: "Kantin Teknik (FT)" },
-        FH: { lat: -6.3641, lon: 106.8315, label: "Kanhuk FH" },
-        MasjidUI: { lat: -6.3652, lon: 106.8314, label: "Masjid UI" },
-        StPondokCina: { lat: -6.3688, lon: 106.8322, label: "St. Pondok Cina" },
-        Vokasi: { lat: -6.3684, lon: 106.8238, label: "Kantin Vokasi" },
-        FMIPA: { lat: -6.3698, lon: 106.8264, label: "Kantin FMIPA" },
-        FKM: { lat: -6.3712, lon: 106.8298, label: "Kantin FKM" }
-      };
-
-      // Informasi lengkap setiap kantin fakultas di UI
-      const FACULTY_META = {
-        FT: { full: "Kantin Teknik (FT)", spot: "Balai Makan Teknik", crowd: 78 },
-        FEB: { full: "Kantin FEB UI", spot: "Kantin Selasar FEB", crowd: 82 },
-        FIB: { full: "Kantin Sastra (Kansas FIB)", spot: "Pelataran Kansas", crowd: 85 },
-        FISIP: { full: "Taman Korea (Takor FISIP)", spot: "Taman Korea", crowd: 74 },
-        FPsi: { full: "Kantin Psikologi (FPsi)", spot: "Teras Psikologi", crowd: 56 },
-        FH: { full: "Kantin Hukum (Kanhuk FH)", spot: "Kanhuk", crowd: 62 },
-        Vokasi: { full: "Kantin Vokasi UI", spot: "Pujasera Vokasi", crowd: 68 },
-        FMIPA: { full: "Kantin FMIPA UI", spot: "Kantin Dallas MIPA", crowd: 71 },
-        FKM: { full: "Kantin FKM UI", spot: "Kantin Sehat FKM", crowd: 54 }
-      };
-
-      // Katalog 32 tenant di 9 fakultas UI dengan foto sajian asli & jumlah Love ❤️
-      const INITIAL_TENANTS = [
-        { id: 1, fac: "FT", stallNo: 1, name: "Ayam Geprek Mas Teknik", sp: "Ayam", hue: 24, desc: "Ayam geprek sambal bawang pedas nampol favorit anak Teknik.",
-          menu: [
-            { name: "Ayam Geprek Sambal Bawang", price: 16000, cat: "Ayam", loves: 158, soldOut: false, img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=480&q=80" },
-            { name: "Ayam Geprek Keju Lumer", price: 19000, cat: "Ayam", loves: 112, soldOut: false, img: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=480&q=80" },
-            { name: "Es Teh Lemon Segar", price: 5000, cat: "Minuman", loves: 74, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 2, fac: "FT", stallNo: 2, name: "Mie Ayam & Pangsit Pak Kumis", sp: "Mie", hue: 38, desc: "Mie ayam yamin manis gurih dengan pangsit rebus.",
-          menu: [
-            { name: "Mie Ayam Yamin Komplit", price: 15000, cat: "Mie", loves: 134, soldOut: false, img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=480&q=80" },
-            { name: "Bakso Kuah Pangsit", price: 16000, cat: "Mie", loves: 89, soldOut: false, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 3, fac: "FT", stallNo: 3, name: "Nasi Padang Uni Salma", sp: "Nasi", hue: 14, desc: "Rendang dan ayam pop bumbu Minang otentik.",
-          menu: [
-            { name: "Nasi Rendang Daging", price: 21000, cat: "Nasi", loves: 145, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" },
-            { name: "Nasi Ayam Pop Sambal Ijo", price: 18000, cat: "Ayam", loves: 109, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 4, fac: "FT", stallNo: 4, name: "Kopi & Roti Bakar Bengkel", sp: "Snack", hue: 28, desc: "Kopi susu gula aren dan roti bakar cokelat keju.",
-          menu: [
-            { name: "Es Kopi Susu Gula Aren", price: 12000, cat: "Minuman", loves: 128, soldOut: false, img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=480&q=80" },
-            { name: "Roti Bakar Cokelat Keju", price: 13000, cat: "Snack", loves: 81, soldOut: false, img: "https://images.unsplash.com/photo-1525351484163-7529414342d8?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 5, fac: "FEB", stallNo: 1, name: "Soto Betawi Bang Jali", sp: "Nasi", hue: 36, desc: "Soto Betawi kuah susu gurih dengan emping melinjo.",
-          menu: [
-            { name: "Soto Betawi Daging + Nasi", price: 22000, cat: "Nasi", loves: 176, soldOut: false, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=480&q=80" },
-            { name: "Soto Ayam Bening", price: 17000, cat: "Nasi", loves: 94, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 6, fac: "FEB", stallNo: 2, name: "Chicken Katsu Curry FEB", sp: "Ayam", hue: 42, desc: "Chicken katsu renyah siram saus kari Jepang.",
-          menu: [
-            { name: "Chicken Katsu Curry Rice", price: 20000, cat: "Ayam", loves: 154, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" },
-            { name: "Matcha Latte Dingin", price: 14000, cat: "Minuman", loves: 98, soldOut: false, img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 7, fac: "FEB", stallNo: 3, name: "Gado-Gado & Ketoprak Ibu Dewi", sp: "Sehat", hue: 110, desc: "Bumbu kacang ulek dadakan dengan sayuran segar.",
-          menu: [
-            { name: "Gado-Gado Lontong Spesial", price: 15000, cat: "Sehat", loves: 119, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" },
-            { name: "Ketoprak Telur Dadar", price: 14000, cat: "Sehat", loves: 88, soldOut: false, img: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 18, fac: "FEB", stallNo: 4, name: "Dimsum & Siomay Mentai", sp: "Snack", hue: 12, desc: "Dimsum ayam udang kukus saus mentai bakar.",
-          menu: [
-            { name: "Dimsum Mentai (4 pcs)", price: 16000, cat: "Snack", loves: 137, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 8, fac: "FIB", stallNo: 1, name: "Nasi Goreng Kansas Bu Imi", sp: "Nasi", hue: 18, desc: "Nasi goreng kampung & kwetiau legendaris Bu Imi di Kansas FIB.",
-          menu: [
-            { name: "Nasi Goreng Kampung Bu Imi", price: 16000, cat: "Nasi", loves: 198, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" },
-            { name: "Kwetiau Goreng Sapi Spesial", price: 18000, cat: "Mie", loves: 132, soldOut: false, img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=480&q=80" },
-            { name: "Es Teh Manis Bu Imi", price: 4000, cat: "Minuman", loves: 91, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 9, fac: "FIB", stallNo: 2, name: "Pecel Lele & Ayam Kremes Sastra", sp: "Ayam", hue: 30, desc: "Ayam kremes renyah dengan sambal terasi segar.",
-          menu: [
-            { name: "Nasi Ayam Kremes + Sambal", price: 17000, cat: "Ayam", loves: 141, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 19, fac: "FIB", stallNo: 3, name: "Ayam Penyet Mbak Yanti", sp: "Ayam", hue: 22, desc: "Ayam goreng lengkuas penyet sambal tomat terasi.",
-          menu: [
-            { name: "Ayam Penyet Sambal Terasi", price: 16000, cat: "Ayam", loves: 118, soldOut: false, img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 20, fac: "FIB", stallNo: 4, name: "Es Podeng & Jus Buah Kansas", sp: "Minuman", hue: 340, desc: "Aneka jus buah segar dan es podeng alpukat.",
-          menu: [
-            { name: "Jus Alpukat Cokelat", price: 11000, cat: "Minuman", loves: 115, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 10, fac: "FISIP", stallNo: 1, name: "Korean Street Food Takor", sp: "Mie", hue: 352, desc: "Tteokbokki dan rabokki hangat di Taman Korea FISIP.",
-          menu: [
-            { name: "Rabokki Keju Mozzarella", price: 20000, cat: "Mie", loves: 167, soldOut: false, img: "https://images.unsplash.com/photo-1580651315530-69c8e0026377?auto=format&fit=crop&w=480&q=80" },
-            { name: "Kimbap Tuna Mayo", price: 16000, cat: "Snack", loves: 121, soldOut: false, img: "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 11, fac: "FISIP", stallNo: 2, name: "Nasi Kulit Crispy Bang Brewok", sp: "Ayam", hue: 26, desc: "Nasi kulit ayam krispi serundeng pedas.",
-          menu: [
-            { name: "Nasi Kulit Ayam Krispi", price: 17000, cat: "Ayam", loves: 149, soldOut: false, img: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 21, fac: "FISIP", stallNo: 3, name: "Batagor & Siomay Bandung Takor", sp: "Snack", hue: 34, desc: "Batagor ikan tenggiri bumbu kacang kental.",
-          menu: [
-            { name: "Batagor Komplit Bumbu Kacang", price: 14000, cat: "Snack", loves: 108, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 22, fac: "FISIP", stallNo: 4, name: "Thai Tea & Boba Takor", sp: "Minuman", hue: 20, desc: "Original Thai tea dan brown sugar boba segar.",
-          menu: [
-            { name: "Original Thai Tea Large", price: 10000, cat: "Minuman", loves: 114, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 12, fac: "FPsi", stallNo: 1, name: "Rice Bowl Teriyaki Psikologi", sp: "Ayam", hue: 40, desc: "Chicken teriyaki rice bowl dengan telur mata sapi.",
-          menu: [
-            { name: "Chicken Teriyaki Rice Bowl", price: 18000, cat: "Ayam", loves: 126, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 23, fac: "FPsi", stallNo: 2, name: "Salad & Smoothie Bowl FPsi", sp: "Sehat", hue: 130, desc: "Menu sehat segar penuh vitamin untuk kuliah seharian.",
-          menu: [
-            { name: "Chicken Caesar Salad", price: 19000, cat: "Sehat", loves: 96, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 24, fac: "FPsi", stallNo: 3, name: "Waffle & Kopi Tenang", sp: "Snack", hue: 28, desc: "Belgian waffle hangat dengan es krim vanila.",
-          menu: [
-            { name: "Waffle Cokelat Pisang", price: 15000, cat: "Snack", loves: 87, soldOut: false, img: "https://images.unsplash.com/photo-1525351484163-7529414342d8?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 13, fac: "FH", stallNo: 1, name: "Sate Ayam & Lontong Kanhuk", sp: "Ayam", hue: 32, desc: "Sate ayam bumbu kacang halus dengan lontong.",
-          menu: [
-            { name: "Sate Ayam 10 Tusuk + Lontong", price: 18000, cat: "Ayam", loves: 133, soldOut: false, img: "https://images.unsplash.com/photo-1529563021893-cc83c992d75d?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 25, fac: "FH", stallNo: 2, name: "Nasi Uduk & Ayam Bakar Kanhuk", sp: "Nasi", hue: 18, desc: "Nasi uduk gurih santan dengan ayam bakar madu.",
-          menu: [
-            { name: "Nasi Uduk Ayam Bakar Madu", price: 19000, cat: "Nasi", loves: 117, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 26, fac: "FH", stallNo: 3, name: "Es Jeruk & Kelapa Muda FH", sp: "Minuman", hue: 46, desc: "Es kelapa muda murni dan jeruk peras.",
-          menu: [
-            { name: "Es Kelapa Muda Gula Aren", price: 10000, cat: "Minuman", loves: 92, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 14, fac: "Vokasi", stallNo: 1, name: "Nasi Bakar Spesial Vokasi", sp: "Nasi", hue: 120, desc: "Nasi bakar ayam suwir kemangi harum daun pisang.",
-          menu: [
-            { name: "Nasi Bakar Ayam Kemangi", price: 15000, cat: "Nasi", loves: 129, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 27, fac: "Vokasi", stallNo: 2, name: "Seblak Prasmanan Teh Neng", sp: "Mie", hue: 8, desc: "Seblak kerupuk pedas kuah kencur segar.",
-          menu: [
-            { name: "Seblak Komplit Ceker & Bakso", price: 15000, cat: "Mie", loves: 118, soldOut: false, img: "https://images.unsplash.com/photo-1580651315530-69c8e0026377?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 28, fac: "Vokasi", stallNo: 3, name: "Cireng Bumbu Rujak Vokasi", sp: "Snack", hue: 36, desc: "Cireng krispi cocol sambal rujak gula merah.",
-          menu: [
-            { name: "Cireng Crispy Bumbu Rujak", price: 10000, cat: "Snack", loves: 95, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 15, fac: "FMIPA", stallNo: 1, name: "Bakso Malang Cak Eko", sp: "Mie", hue: 16, desc: "Bakso urat dan pangsit goreng kriuk Dallas MIPA.",
-          menu: [
-            { name: "Bakso Malang Komplit", price: 15000, cat: "Mie", loves: 148, soldOut: false, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 16, fac: "FMIPA", stallNo: 2, name: "Ayam Taliwang & Plecing MIPA", sp: "Ayam", hue: 10, desc: "Ayam bakar bumbu pedas khas Lombok.",
-          menu: [
-            { name: "Nasi Ayam Taliwang Pedas", price: 19000, cat: "Ayam", loves: 116, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 29, fac: "FMIPA", stallNo: 3, name: "Nasi Campur Bali Bli Made", sp: "Nasi", hue: 28, desc: "Ayam betutu suwir, sate lilit, dan sambal matah.",
-          menu: [
-            { name: "Nasi Campur Ayam Betutu", price: 18000, cat: "Nasi", loves: 124, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 30, fac: "FMIPA", stallNo: 4, name: "Es Cendol Dawet MIPA", sp: "Minuman", hue: 115, desc: "Cendol pandan santan segar gula aren.",
-          menu: [
-            { name: "Es Cendol Dawet Gula Aren", price: 9000, cat: "Minuman", loves: 84, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 17, fac: "FKM", stallNo: 1, name: "Nasi Merah & Ayam Panggang Sehat", sp: "Sehat", hue: 135, desc: "Menu rendah minyak dan tinggi protein favorit FKM.",
-          menu: [
-            { name: "Nasi Merah Ayam Panggang Herb", price: 19000, cat: "Sehat", loves: 131, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 31, fac: "FKM", stallNo: 2, name: "Sop Ikan & Sayur Bening FKM", sp: "Sehat", hue: 195, desc: "Sop ikan dori kuah segar dengan sayur bayam.",
-          menu: [
-            { name: "Sop Ikan Dori + Nasi", price: 20000, cat: "Sehat", loves: 102, soldOut: false, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=480&q=80" }
-          ]
-        },
-        { id: 32, fac: "FKM", stallNo: 3, name: "Cold Pressed Juice Bar FKM", sp: "Minuman", hue: 85, desc: "Jus sayur dan buah murni tanpa gula tambahan.",
-          menu: [
-            { name: "Green Detox Juice (Apel & Bayam)", price: 13000, cat: "Minuman", loves: 89, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
-          ]
-        }
-      ];
-
-      // Penyimpanan data di localStorage agar sinkron real-time antara Pembeli & Penjual
-      let TENANTS = [];
-      function loadTenants() {
-        try {
-          const saved = JSON.parse(localStorage.getItem("kui_tenants_v14") || "null");
-          if (Array.isArray(saved) && saved.length) { TENANTS = saved; return; }
-        } catch (e) {}
-        TENANTS = JSON.parse(JSON.stringify(INITIAL_TENANTS));
-        saveTenants();
-      }
-      function saveTenants() {
-        try { localStorage.setItem("kui_tenants_v14", JSON.stringify(TENANTS)); } catch (e) {}
-      }
-
-      let ORDERS = [];
-      function loadOrders() {
-        try { ORDERS = JSON.parse(localStorage.getItem("kui_orders_v14") || "[]"); } catch (e) { ORDERS = []; }
-      }
-      function saveOrders() {
-        try { localStorage.setItem("kui_orders_v14", JSON.stringify(ORDERS)); } catch (e) {}
-      }
-
-      let EXPENSES = [];
-      function loadExpenses() {
-        try { EXPENSES = JSON.parse(localStorage.getItem("kui_expenses_v14") || "[]"); } catch (e) { EXPENSES = []; }
-      }
-      function saveExpenses() {
-        try { localStorage.setItem("kui_expenses_v14", JSON.stringify(EXPENSES)); } catch (e) {}
-      }
-
-      let LOVED_KEYS = {};
-      try { LOVED_KEYS = JSON.parse(localStorage.getItem("kui_loved_v14") || "{}"); } catch (e) {}
-      function saveLoved() {
-        try { localStorage.setItem("kui_loved_v14", JSON.stringify(LOVED_KEYS)); } catch (e) {}
-      }
-
-      loadTenants();
-      loadOrders();
-      loadExpenses();
-
-      // State tampilan pembeli (denahFac awalnya null agar denah hanya muncul ketika fakultas dipilih)
-      const S = {
-        facFilter: "ALL",
-        catFilter: "Semua",
-        denahFac: null,
-        cart: [],
-        mapMode: "kantin",
-        routeA: null,
-        routeB: null
-      };
-
-      // Menampilkan foto makanan dengan gambar cadangan SVG otomatis bila offline
-      function foodPhotoHTML(name, cat, hue, seed, imgUrl) {
-        const emoji = cat === "Minuman" ? "🧋" : cat === "Mie" ? "🍜" : cat === "Snack" ? "🥟" : cat === "Sehat" ? "🥗" : "🍛";
-        const fallbackSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="hsl(${hue % 360},72%,46%)"/><text x="60" y="72" text-anchor="middle" font-size="46">${emoji}</text></svg>`
-        )}`;
-        if (imgUrl && imgUrl.length > 4) {
-          return `<img src="${imgUrl}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackSvg}'">`;
-        }
-        return `<img src="${fallbackSvg}" alt="${name}">`;
-      }
-
-      // =====================================================================
-      // LOGIKA PETA RUTE BIKUN UI (JALUR MERAH & BIRU)
-      // =====================================================================
-      const MAP_NODES = [
-        { id: "AsramaUI", x: 340, y: 120, fac: null, label: "Asrama UI", lx: 340, ly: 92, anchor: "middle", big: true },
-        { id: "Menwa", x: 690, y: 165, fac: null, label: "Menwa", lx: 722, ly: 170, anchor: "start", big: true },
-        { id: "StasiunUI", x: 690, y: 265, fac: null, label: "Stasiun UI", lx: 722, ly: 270, anchor: "start", big: true },
-        { id: "FEB", x: 265, y: 385, fac: "FEB", label: "FEB", lx: 265, ly: 354, anchor: "middle", big: true },
-        { id: "FIB", x: 375, y: 385, fac: "FIB", label: "FIB", lx: 375, ly: 354, anchor: "middle", big: true },
-        { id: "FISIP", x: 485, y: 385, fac: "FISIP", label: "FISIP", lx: 485, ly: 354, anchor: "middle", big: true },
-        { id: "FPsi", x: 590, y: 385, fac: "FPsi", label: "FPsi", lx: 590, ly: 354, anchor: "middle", big: true },
-        { id: "FT", x: 180, y: 445, fac: "FT", label: "FT", lx: 145, ly: 451, anchor: "end", big: true },
-        { id: "FH", x: 690, y: 495, fac: "FH", label: "FH", lx: 722, ly: 501, anchor: "start", big: true },
-        { id: "MasjidUI", x: 676, y: 615, fac: null, label: "Masjid UI", lx: 654, ly: 620, anchor: "end", big: false },
-        { id: "StPondokCina", x: 690, y: 735, fac: null, label: "St. Pondok Cina", lx: 722, ly: 741, anchor: "start", big: true },
-        { id: "Vokasi", x: 180, y: 785, fac: "Vokasi", label: "Vokasi", lx: 145, ly: 791, anchor: "end", big: true },
-        { id: "Pusgiwa", x: 270, y: 865, fac: null, label: "Pusgiwa", lx: 270, ly: 840, anchor: "middle", big: false },
-        { id: "Farmasi", x: 385, y: 865, fac: null, label: "Farmasi", lx: 385, ly: 840, anchor: "middle", big: false },
-        { id: "BalaiSidang", x: 500, y: 865, fac: null, label: "Balai Sidang", lx: 500, ly: 830, anchor: "middle", big: false },
-        { id: "Balairung", x: 615, y: 865, fac: null, label: "Balairung", lx: 615, ly: 840, anchor: "middle", big: false },
-        { id: "SOR", x: 295, y: 892, fac: null, label: "SOR", lx: 295, ly: 924, anchor: "middle", big: false },
-        { id: "FMIPA", x: 385, y: 925, fac: "FMIPA", label: "FMIPA", lx: 365, ly: 956, anchor: "end", big: false },
-        { id: "FIK", x: 470, y: 965, fac: null, label: "FIK", lx: 470, ly: 996, anchor: "middle", big: false },
-        { id: "RSUI", x: 565, y: 965, fac: null, label: "RSUI", lx: 565, ly: 996, anchor: "middle", big: false },
-        { id: "FKM", x: 655, y: 965, fac: "FKM", label: "FKM", lx: 655, ly: 996, anchor: "middle", big: false },
-        { id: "RIK", x: 704, y: 895, fac: null, label: "RIK", lx: 730, ly: 901, anchor: "start", big: false }
-      ];
-
-      let mapView = { x: 40, y: 40, w: 920, h: 1120, dragging: false, moved: false, sx: 0, sy: 0 };
-
-      function applyMapViewBox() {
-        const svg = $("ui-map");
-        if (svg) svg.setAttribute("viewBox", `${mapView.x} ${mapView.y} ${mapView.w} ${mapView.h}`);
-      }
-
-      window.zoomMap = function(factor) {
-        const nw = Math.min(920, Math.max(420, mapView.w * factor));
-        const nh = Math.min(1120, Math.max(510, mapView.h * factor));
-        mapView.x += (mapView.w - nw) / 2;
-        mapView.y += (mapView.h - nh) / 2;
-        mapView.w = nw;
-        mapView.h = nh;
-        applyMapViewBox();
-      };
-
-      // Mengembalikan zoom/geser peta ke posisi awal dan menutup denah fakultas aktif
-      window.focusMapCenter = function() {
-        mapView.x = 40;
-        mapView.y = 40;
-        mapView.w = 920;
-        mapView.h = 1120;
-        applyMapViewBox();
-        S.routeA = null;
-        S.routeB = null;
-        S.facFilter = "ALL";
-        S.denahFac = null;
-        $("route-info").textContent = "Peta di-reset ke tengah · Menampilkan semua kantin";
-        drawBikunMap();
-        renderDenah();
-        render();
-      };
-
-      window.setMapMode = function(mode) {
-        S.mapMode = mode;
-        S.routeA = null;
-        S.routeB = null;
-        $("mode-kantin").classList.toggle("on", mode === "kantin");
-        $("mode-rute").classList.toggle("on", mode === "rute");
-        $("route-info").textContent = mode === "kantin"
-          ? "Ketuk pin fakultas untuk melihat kantin & denahnya"
-          : "Ketuk 2 titik halte/fakultas untuk mengukur jarak Bikun";
-        drawBikunMap();
-      };
-
-      // Menghitung jarak nyata (meter) antara 2 lokasi menggunakan rumus Haversine
-      function haversineMeters(a, b) {
-        const c1 = GPS_COORDS[a], c2 = GPS_COORDS[b];
-        if (!c1 || !c2) return 450;
-        const R = 6371000;
-        const dLat = ((c2.lat - c1.lat) * Math.PI) / 180;
-        const dLon = ((c2.lon - c1.lon) * Math.PI) / 180;
-        const s = Math.sin(dLat / 2) ** 2 + Math.cos((c1.lat * Math.PI) / 180) * Math.cos((c2.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-        return Math.round(R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s)) * 1.18);
-      }
-
-      // Membuka kantin fakultas & memunculkan denah kantin fakultas tersebut
-      window.bukaDenahFakultas = function(fac, autoScroll = true) {
-        S.facFilter = fac;
-        S.denahFac = fac;
-        $("route-info").innerHTML = `📍 Menampilkan <b>${FACULTY_META[fac]?.full || fac}</b>`;
-        drawBikunMap();
-        render();
-        renderDenah();
-        if (autoScroll) {
-          setTimeout(() => {
-            document.querySelector("#denah")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }, 80);
-        }
-      };
-
-      window.tutupDenah = function() {
-        S.denahFac = null;
-        renderDenah();
-      };
-
-      window.handleMapNodeClick = function(nodeId) {
-        if (mapView.moved) return;
-        const node = MAP_NODES.find(n => n.id === nodeId);
-        if (!node) return;
-
-        if (S.mapMode === "rute") {
-          if (!S.routeA || S.routeB) {
-            S.routeA = nodeId;
-            S.routeB = null;
-            $("route-info").innerHTML = `Titik awal: <b>${node.label}</b> · Ketuk titik tujuan`;
-          } else if (S.routeA !== nodeId) {
-            S.routeB = nodeId;
-            const m = haversineMeters(S.routeA, S.routeB);
-            const walkMin = Math.max(2, Math.round(m / 75));
-            const bikunMin = Math.max(2, Math.round(m / 320) + 2);
-            $("route-info").innerHTML = `🚌 <b>${S.routeA} → ${S.routeB}</b>: ~${m} m (🚶 ${walkMin} mnt / 🚌 Bikun ±${bikunMin} mnt)`;
-          }
-          drawBikunMap();
-          return;
-        }
-
-        if (node.fac) {
-          bukaDenahFakultas(node.fac, true);
-        } else {
-          toast(`🚏 Halte <b>${node.label}</b> — ketuk pin fakultas untuk melihat kantin.`);
-        }
-      };
-
-      function drawBikunMap() {
-        const svg = $("ui-map");
-        if (!svg) return;
-        let routeLine = "";
-        if (S.routeA && S.routeB) {
-          const na = MAP_NODES.find(n => n.id === S.routeA);
-          const nb = MAP_NODES.find(n => n.id === S.routeB);
-          if (na && nb) {
-            routeLine = `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" stroke="#f0a800" stroke-width="8" stroke-dasharray="14 10" stroke-linecap="round"/>`;
-          }
-        }
-
-        svg.innerHTML = `
-          <g transform="translate(235, 225)">
-            <circle cx="0" cy="0" r="42" fill="#ffffff" stroke="#64748b" stroke-width="2"/>
-            <text x="0" y="-12" text-anchor="middle" font-size="14" font-weight="800" fill="#475569">U N</text>
-            <polygon points="0,-6 14,22 0,14 -14,22" fill="#c87272"/>
-          </g>
-          <path d="M 340 112 L 645 112 Q 704 112 704 170 L 704 895 Q 704 965 635 965 L 470 965 Q 430 965 395 930 L 375 910 Q 345 892 295 892 L 235 892 Q 166 892 166 820 L 166 445 Q 166 372 240 372 L 635 372 Q 704 372 704 305"
-            fill="none" stroke="#c0202e" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M 340 128 L 630 128 Q 676 128 676 175 L 676 815 Q 676 865 620 865 L 250 865 Q 194 865 194 810 L 194 450 Q 194 398 250 398 L 620 398 Q 676 398 676 345"
-            fill="none" stroke="#1f3b9d" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M 736 285 L 736 450" stroke="#c0202e" stroke-width="4"/>
-          <path d="M 134 730 L 134 490" stroke="#c0202e" stroke-width="4"/>
-          <path d="M 635 934 L 475 934" stroke="#c0202e" stroke-width="4"/>
-          <path d="M 595 424 L 275 424" stroke="#1f3b9d" stroke-width="4"/>
-          <path d="M 224 490 L 224 735" stroke="#1f3b9d" stroke-width="4"/>
-          <path d="M 385 894 L 595 894" stroke="#1f3b9d" stroke-width="4"/>
-          <path d="M 648 630 L 648 475" stroke="#1f3b9d" stroke-width="4"/>
-          ${routeLine}
-          ${MAP_NODES.map(n => {
-            const isSel = (n.fac && S.facFilter === n.fac) || S.routeA === n.id || S.routeB === n.id;
-            const r = n.big ? 16 : 9;
-            const fill = isSel ? "#f0a800" : "#ffffff";
-            const stroke = n.fac ? "#141824" : "#1f3b9d";
-            return `
-            <g class="node-pin" onclick="handleMapNodeClick('${n.id}')">
-              <circle cx="${n.x}" cy="${n.y}" r="${r + 10}" fill="transparent"/>
-              <circle class="ring" cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${n.big ? 4.5 : 3.5}"/>
-              <text x="${n.lx}" y="${n.ly}" text-anchor="${n.anchor}" font-size="${n.big ? 21 : 17}" font-weight="${n.fac ? 800 : 600}" fill="currentColor">${n.label}</text>
-            </g>`;
-          }).join("")}
-        `;
-      }
-
-      function setupMapGestures() {
-        const box = $("map-box");
-        if (!box) return;
-        const onDown = (cx, cy) => { mapView.dragging = true; mapView.moved = false; mapView.sx = cx; mapView.sy = cy; };
-        const onMove = (cx, cy) => {
-          if (!mapView.dragging) return;
-          const dx = cx - mapView.sx, dy = cy - mapView.sy;
-          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) mapView.moved = true;
-          const rect = box.getBoundingClientRect();
-          mapView.x -= (dx / rect.width) * mapView.w;
-          mapView.y -= (dy / rect.height) * mapView.h;
-          mapView.sx = cx;
-          mapView.sy = cy;
-          applyMapViewBox();
-        };
-        const onUp = () => { mapView.dragging = false; setTimeout(() => { mapView.moved = false; }, 60); };
-
-        box.addEventListener("mousedown", e => { if (!e.target.closest(".map-ctrls")) onDown(e.clientX, e.clientY); });
-        window.addEventListener("mousemove", e => onMove(e.clientX, e.clientY));
-        window.addEventListener("mouseup", onUp);
-        box.addEventListener("touchstart", e => { if (!e.target.closest(".map-ctrls") && e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-        box.addEventListener("touchmove", e => { if (mapView.dragging && e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
-        box.addEventListener("touchend", onUp);
-      }
-
-      // =====================================================================
-      // LOGIKA DENAH KANTIN FAKULTAS (MUNCUL SAAT KANTIN FAKULTAS DIPILIH)
-      // =====================================================================
-      function renderDenah() {
-        const sec = $("denah");
-        if (!sec) return;
-        if (!S.denahFac) {
-          sec.classList.remove("on");
-          return;
-        }
-        sec.classList.add("on");
-        $("denah-title").textContent = `📐 Denah ${FACULTY_META[S.denahFac]?.full || S.denahFac}`;
-
-        const tList = TENANTS.filter(t => t.fac === S.denahFac).sort((a, b) => a.stallNo - b.stallNo);
-        const half = Math.ceil(tList.length / 2);
-        const topStalls = tList.slice(0, half);
-        const bottomStalls = tList.slice(half);
-
-        const stallCard = t => {
-          const loves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
-          return `
-          <div class="fp-stall" tabindex="0" onclick="openTenant(${t.id})" onkeydown="if(event.key==='Enter')openTenant(${t.id})">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
-              <span class="fac-pill" style="margin:0">Stan #0${t.stallNo}</span>
-              <span style="font-size:11px;font-weight:800;color:var(--rd)">❤️ ${loves}</span>
-            </div>
-            <div style="font-weight:800;font-size:13px;line-height:1.25">${t.name}</div>
-            <div class="mu" style="font-size:11px;margin-top:2px">${t.sp} · ${t.menu.length} menu</div>
-            <div style="font-size:11px;font-weight:800;color:var(--bl);margin-top:5px">Lihat Menu →</div>
-          </div>`;
-        };
-
-        $("denah-board").innerHTML = `
-          <div class="floorplan-wrap">
-            <div class="fp-door">🚪 Pintu Masuk Utama · ${FACULTY_META[S.denahFac]?.full || S.denahFac}</div>
-            <div class="fp-corridor-label">⬇ Lorong Masuk &amp; Area Stan Depan ⬇</div>
-            <div class="fp-grid">
-              ${topStalls.map(stallCard).join("")}
-              <div class="fp-center-zone">
-                <div style="text-align:center;font-size:11px;font-weight:800;color:var(--tx);margin-bottom:6px">
-                  🪑 Area Makan Mahasiswa (${FACULTY_META[S.denahFac]?.spot || "Ruang Utama"})
-                </div>
-                <div class="fp-tables">
-                  <div class="fp-table-unit">🍽️ Meja A1–A4<div style="font-size:9px;color:var(--mu)">Kapasitas 16 org</div></div>
-                  <div class="fp-table-unit">🍽️ Meja B1–B4<div style="font-size:9px;color:var(--mu)">Kapasitas 16 org</div></div>
-                  <div class="fp-table-unit">🍽️ Meja C1–C4<div style="font-size:9px;color:var(--mu)">Area Kipas / Colokan</div></div>
-                </div>
-                <div class="fp-facilities">
-                  <div class="fp-fac-box">🚰 Wastafel &amp; Sabun<div style="font-size:9px;font-weight:600">Sisi Kiri Lorong</div></div>
-                  <div class="fp-fac-box pickup">📱 Meja Ambil QRIS<div style="font-size:9px;font-weight:600">Bebas Antre Tunai</div></div>
-                  <div class="fp-fac-box trash">♻️ Tempat Sampah<div style="font-size:9px;font-weight:600">Organik &amp; Anorganik</div></div>
-                </div>
-              </div>
-              ${bottomStalls.map(stallCard).join("")}
-            </div>
-            <div class="fp-corridor-label" style="margin-top:8px">⬇ Lorong Belakang &amp; Akses Keluar ⬇</div>
-            <div class="fp-door exit">🌿 Pintu Keluar / Akses Selasar Fakultas</div>
-          </div>
-        `;
-      }
-
-      // =====================================================================
-      // LOGIKA KANTIN, TENANT & SISTEM LOVE ❤️
-      // =====================================================================
-      window.toggleLoveMenu = function(tid, menuIdx, ev) {
-        if (ev) ev.stopPropagation();
-        const t = TENANTS.find(x => x.id === tid);
-        if (!t || !t.menu[menuIdx]) return;
-        const key = `${tid}_${menuIdx}`;
-        if (LOVED_KEYS[key]) {
-          delete LOVED_KEYS[key];
-          t.menu[menuIdx].loves = Math.max(0, (t.menu[menuIdx].loves || 1) - 1);
-        } else {
-          LOVED_KEYS[key] = true;
-          t.menu[menuIdx].loves = (t.menu[menuIdx].loves || 0) + 1;
-          toast(`❤️ Kamu menyukai <b>${t.menu[menuIdx].name}</b>!`);
-        }
-        saveLoved();
-        saveTenants();
-        render();
-        if ($("md").classList.contains("on") && window._openedTenantId === tid) openTenant(tid);
-      };
-
-      function render() {
-        const cats = ["Semua", "Ayam", "Nasi", "Mie", "Minuman", "Snack", "Sehat"];
-        $("cat-tabs").innerHTML = cats.map(c =>
-          `<button type="button" class="chip ${S.catFilter === c ? "on" : ""}" onclick="setCat('${c}')">${c}</button>`
-        ).join("");
-
-        $("fac-filter-label").innerHTML = S.facFilter === "ALL"
-          ? "Semua Fakultas"
-          : `Filter: <b>${S.facFilter}</b> <a href="#" onclick="focusMapCenter();return false" style="color:var(--rd);font-weight:800">(Reset)</a>`;
-
-        const kw = ($("q")?.value || "").trim().toLowerCase();
-        const facsToShow = S.facFilter === "ALL" ? Object.keys(FACULTY_META) : [S.facFilter];
-
-        const rankedFacs = facsToShow
-          .map(fac => {
-            const tenants = TENANTS.filter(t => t.fac === fac)
-              .map(t => ({ ...t, totalLoves: t.menu.reduce((s, m) => s + (m.loves || 0), 0) }))
-              .filter(t => {
-                const matchCat = S.catFilter === "Semua" || t.menu.some(m => m.cat === S.catFilter);
-                const matchKw = !kw || t.name.toLowerCase().includes(kw) || t.fac.toLowerCase().includes(kw) || t.menu.some(m => m.name.toLowerCase().includes(kw));
-                return matchCat && matchKw;
-              })
-              .sort((a, b) => b.totalLoves - a.totalLoves);
-            const facLoves = tenants.reduce((s, t) => s + t.totalLoves, 0);
-            return { fac, tenants, facLoves };
-          })
-          .filter(g => g.tenants.length > 0)
-          .sort((a, b) => b.facLoves - a.facLoves);
-
-        $("list").innerHTML = rankedFacs.length
-          ? rankedFacs.map((g, idx) => {
-              const dishTiles = [];
-              g.tenants.forEach(t => t.menu.forEach((m, mIdx) => dishTiles.push({ tid: t.id, tName: t.name, hue: t.hue + mIdx * 20, m })));
-              dishTiles.sort((a, b) => (b.m.loves || 0) - (a.m.loves || 0));
-              const topDishes = dishTiles.slice(0, 6);
-
-              return `
-              <div class="fac-card">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                  <div>
-                    ${idx === 0 ? '<span class="badge-st" style="background:#fef3c7;color:#b45309">🏆 Kantin Paling Banyak Di-Love</span>' : ""}
-                    <h3 style="margin:4px 0 2px;font-size:16.5px">${FACULTY_META[g.fac]?.full || g.fac}</h3>
-                    <div class="mu">${g.tenants.length} Tenant · ❤️ <b>${g.facLoves} Total Love</b></div>
-                  </div>
-                  <button type="button" class="chip on" onclick="bukaDenahFakultas('${g.fac}', true)">📐 Denah Kantin →</button>
-                </div>
-
-                <div style="font-size:11px;color:var(--mu);margin-top:8px">Arahkan kursor / ketuk foto untuk info menu &amp; harga:</div>
-                <div class="collage-grid">
-                  ${topDishes.map((d, i) => `
-                    <div class="col-tile" tabindex="0" onclick="openTenant(${d.tid})">
-                      ${foodPhotoHTML(d.m.name, d.m.cat, d.hue, d.tid + i, d.m.img)}
-                      <div class="col-overlay">
-                        <b>${d.m.name}</b>
-                        <span>${rp(d.m.price)} · ❤️ ${d.m.loves || 0}</span>
-                        <small>Stan: ${d.tName}</small>
-                      </div>
-                    </div>
-                  `).join("")}
-                </div>
-
-                <div style="font-weight:800;font-size:12.5px;margin:10px 0 6px">Daftar Tenant (${g.tenants.length} Stan):</div>
-                <div class="t-strip">
-                  ${g.tenants.map(t => {
-                    const thumbs = [0, 1, 2].map(k => t.menu[k % t.menu.length]);
-                    return `
-                    <div class="t-card" onclick="openTenant(${t.id})">
-                      <div class="t-mini-collage">
-                        ${thumbs.map((m, k) => foodPhotoHTML(m.name, m.cat, t.hue + k * 25, t.id + k, m.img)).join("")}
-                      </div>
-                      <b style="font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</b>
-                      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
-                        <span class="mu" style="font-size:11px">Stan #0${t.stallNo} · ${t.sp}</span>
-                        <span style="font-size:11.5px;font-weight:800;color:var(--rd)">❤️ ${t.totalLoves}</span>
-                      </div>
-                      <div style="font-size:11px;font-weight:800;color:var(--bl);margin-top:4px">Klik lihat ${t.menu.length} menu →</div>
-                    </div>`;
-                  }).join("")}
-                </div>
-              </div>`;
-            }).join("")
-          : '<div class="card" style="text-align:center"><p class="mu">Menu atau tenant yang dicari tidak ditemukan.</p></div>';
-      }
-
-      window.setCat = function(c) { S.catFilter = c; render(); };
-
-      // Membuka modal detail menu suatu tenant lengkap dengan tombol Love & stok habis
-      window.openTenant = function(tid) {
-        window._openedTenantId = tid;
-        const t = TENANTS.find(x => x.id === tid);
-        if (!t) return;
-        const totalLoves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
-
-        show(`
-          <div style="padding-right:38px">
-            <span class="fac-pill">${FACULTY_META[t.fac]?.full || t.fac} · Stan #0${t.stallNo}</span>
-            <h2 style="margin:4px 0;font-size:18.5px">${t.name}</h2>
-            <div class="mu">${t.desc} · ❤️ <b>${totalLoves} Love</b></div>
-          </div>
-          <div style="margin-top:12px">
-            ${t.menu.map((m, idx) => {
-              const isLoved = !!LOVED_KEYS[`${t.id}_${idx}`];
-              return `
-              <div class="mi ${m.soldOut ? "soldout" : ""}">
-                <div class="ph m">${foodPhotoHTML(m.name, m.cat, t.hue + idx * 24, t.id + idx, m.img)}</div>
-                <div class="x">
-                  <b>${m.name}</b>
-                  <div style="font-weight:800;color:var(--bl);font-size:13.5px">${rp(m.price)}</div>
-                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                    <button type="button" class="love-btn ${isLoved ? "loved" : ""}" onclick="toggleLoveMenu(${t.id}, ${idx}, event)">
-                      ${isLoved ? "❤️" : "🤍"} ${m.loves || 0}
-                    </button>
-                    ${m.soldOut ? '<span class="sold-badge">STOK HABIS</span>' : ""}
-                  </div>
-                </div>
-                <div>
-                  ${m.soldOut
-                    ? '<button type="button" class="btn g" disabled style="opacity:0.5;cursor:not-allowed;font-size:11px">Habis</button>'
-                    : `<button type="button" class="btn" onclick="addToCart(${t.id}, ${idx})">+ Pesan</button>`}
-                </div>
-              </div>`;
-            }).join("")}
-          </div>
-        `);
-      };
-
-      // =====================================================================
-      // KERANJANG, CATATAN & CHECKOUT QRIS
-      // =====================================================================
-      window.addToCart = function(tid, idx) {
-        const t = TENANTS.find(x => x.id === tid);
-        if (!t || !t.menu[idx] || t.menu[idx].soldOut) { toast("❌ Maaf, menu ini sedang habis."); return; }
-        const m = t.menu[idx];
-        const ex = S.cart.find(c => c.tid === tid && c.name === m.name);
-        if (ex) ex.qty += 1;
-        else S.cart.push({ tid: t.id, tName: t.name, fac: t.fac, name: m.name, price: m.price, qty: 1, note: "" });
-        updateAllCartBars(true);
-        toast(`🛒 <b>${m.name}</b> masuk keranjang!`);
-      };
-
-      function updateAllCartBars(showBar = true) {
-        const cnt = S.cart.reduce((s, c) => s + c.qty, 0);
-        const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
-        $("cb-cnt").textContent = `${cnt} item di keranjang`;
-        $("cb-tot").textContent = rp(tot);
-        $("cbar").classList.toggle("on", cnt > 0 && showBar && !$("seller-portal-view").classList.contains("on"));
-      }
-
-      window.updateItemNote = function(i, val) { if (S.cart[i]) S.cart[i].note = val; };
-      window.ubahQtyCart = function(i, delta) {
-        if (!S.cart[i]) return;
-        S.cart[i].qty += delta;
-        if (S.cart[i].qty <= 0) S.cart.splice(i, 1);
-        updateAllCartBars(true);
-        openCart();
-      };
-
-      window.openCart = function() {
-        if (!S.cart.length) { hideModal(); return; }
-        const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
-        show(`
-          <h2 style="margin:0 0 8px;font-size:18px">🛒 Keranjang &amp; Catatan Pesanan</h2>
-          ${S.cart.map((c, i) => `
-            <div style="border:1px solid var(--bd);border-radius:13px;padding:10px;margin-bottom:8px;background:var(--bg)">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <div><b>${c.name}</b><div class="mu">${c.tName} · ${rp(c.price)}</div></div>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <button type="button" class="chip" onclick="ubahQtyCart(${i}, -1)">−</button>
-                  <b>${c.qty}</b>
-                  <button type="button" class="chip" onclick="ubahQtyCart(${i}, 1)">+</button>
-                </div>
-              </div>
-              <input value="${c.note || ""}" oninput="updateItemNote(${i}, this.value)"
-                placeholder="Catatan item (mis. pedas sedang, tanpa daun bawang)..."
-                style="width:100%;margin-top:6px;padding:7px 10px;border-radius:9px;border:1px solid var(--bd);background:var(--card);font-size:12px">
-            </div>
-          `).join("")}
-          <div style="margin-top:8px">
-            <label style="font-size:12px;font-weight:800">Nama Pemesan</label>
-            <input id="buyer-name" value="Mahasiswa UI" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:3px">
-          </div>
-          <div style="margin-top:8px">
-            <label style="font-size:12px;font-weight:800">📝 Catatan Tambahan Pesanan (Opsional)</label>
-            <input id="order-note" placeholder="Mis. bungkus dipisah, sendok 2..." style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:3px">
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0;padding-top:10px;border-top:1px solid var(--bd)">
-            <span>Total Pembayaran QRIS</span>
-            <b style="font-size:18px;color:var(--gr)">${rp(tot)}</b>
-          </div>
-          <button type="button" class="btn gr" style="width:100%;font-size:14.5px" onclick="bayarQRIS()">📱 Bayar dengan QRIS Sekarang</button>
-        `);
-      };
-
-      function bunyikanBel() {
-        try {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          [587.33, 880].forEach((f, i) => {
-            const o = ctx.createOscillator(), g = ctx.createGain();
-            o.frequency.value = f;
-            g.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.14);
-            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.14 + 0.35);
-            o.connect(g); g.connect(ctx.destination);
-            o.start(ctx.currentTime + i * 0.14); o.stop(ctx.currentTime + i * 0.14 + 0.35);
-          });
-        } catch (e) {}
-      }
-
-      window.bayarQRIS = function() {
-        if (!S.cart.length) return;
-        const nama = ($("buyer-name")?.value || "Mahasiswa UI").trim();
-        const note = ($("order-note")?.value || "").trim();
-        const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
-        const itemsStr = S.cart.map(c => `${c.qty}x ${c.name}`).join(", ");
-        const first = S.cart[0];
-        const orderId = "QRIS-" + Math.floor(1000 + Math.random() * 9000);
-        const now = new Date();
-
-        const newOrder = {
-          id_pesanan: orderId, tid: first.tid, tName: first.tName, fac: first.fac,
-          nama, note, items: itemsStr, detailItems: JSON.parse(JSON.stringify(S.cart)),
-          total: tot, payment: "LUNAS QRIS", status: "Menunggu Konfirmasi",
-          confirmed: false, chat: [], waktu: now.toTimeString().slice(0, 5), tanggal: TD()
-        };
-
-        loadOrders();
-        ORDERS.unshift(newOrder);
-        saveOrders();
-
-        EXPENSES.push({ date: TD(), amt: tot, note: `[${orderId}] ${itemsStr} (${first.tName})`, cat: "Makan berat" });
-        saveExpenses();
-
-        S.cart = [];
-        updateAllCartBars(false);
-        bunyikanBel();
-        renderTrackerPembeli();
-        renderExpenses();
-
-        show(`
-          <div style="text-align:center;padding:8px 0">
-            <div style="font-size:44px">✅</div>
-            <h2 style="margin:6px 0;color:var(--gr)">Pembayaran QRIS Lunas!</h2>
-            <p class="mu">Pesanan <b>${orderId}</b> telah dikirim ke kasir <b>${first.tName}</b>.</p>
-            <div style="background:var(--bg);border:1px solid var(--bd);border-radius:13px;padding:10px;text-align:left;margin:10px 0">
-              <div><b>Rincian:</b> ${itemsStr}</div>
-              ${note ? `<div><b>Catatan:</b> "${note}"</div>` : ""}
-              <div><b>Total:</b> ${rp(tot)}</div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:12px">
-              <button type="button" class="btn g" style="flex:1" onclick="hideModal()">Tutup</button>
-              <a href="portal_penjual.html" onclick="hideModal();return bukaPortalPenjual(event)" class="btn bl" style="flex:1;text-decoration:none">🏪 Buka Portal Penjual ↗</a>
-            </div>
-          </div>
-        `);
-      };
-
-      // =====================================================================
-      // PELACAKAN PESANAN & CHAT 2-ARAH PEMBELI ↔ PENJUAL
-      // =====================================================================
-      function renderTrackerPembeli() {
-        loadOrders();
-        const box = $("order-tracker");
-        if (!box) return;
-        const aktif = ORDERS.slice(0, 3);
-        if (!aktif.length) { box.style.display = "none"; return; }
-        box.style.display = "block";
-        box.innerHTML = `
-        <div class="card" style="border-color:var(--bl)">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <b>🛵 Pesanan Aktif &amp; Chat Penjual</b>
-            <a href="portal_penjual.html" onclick="return bukaPortalPenjual(event)" style="font-size:11px;font-weight:800;color:var(--bl)">Buka Portal Penjual ↗</a>
-          </div>
-          ${aktif.map(o => {
-            const canChat = o.confirmed || o.status !== "Menunggu Konfirmasi";
-            const chatCnt = (o.chat || []).length;
-            return `
-            <div style="border:1px solid var(--bd);border-radius:12px;padding:9px 11px;margin-top:7px;background:var(--bg)">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-                <b>${o.id_pesanan} · ${o.tName}</b>
-                <span class="badge-st">${o.status}</span>
-              </div>
-              <div class="mu" style="margin:3px 0">${o.items} · <b>${rp(o.total)}</b></div>
-              ${canChat
-                ? `<button type="button" class="btn bl" style="min-height:33px;padding:5px 11px;font-size:12px;margin-top:4px" onclick="bukaChatPembeli('${o.id_pesanan}')">💬 Chat Penjual ${chatCnt ? `(${chatCnt} pesan)` : ""}</button>`
-                : `<div style="font-size:11px;color:var(--mu);margin-top:3px">⏳ Menunggu penjual mengonfirmasi pesanan agar chat aktif...</div>`}
-            </div>`;
-          }).join("")}
-        </div>`;
-      }
-
-      window.bukaChatPembeli = function(idPesanan) {
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        const msgs = o.chat || [];
-        show(`
-          <div style="padding-right:38px">
-            <span class="fac-pill">💬 Chat dengan ${o.tName}</span>
-            <div style="font-weight:800;font-size:16px">${o.id_pesanan} · ${o.items}</div>
-          </div>
-          <div class="chat-box" id="buyer-chat-list">
-            ${msgs.length ? msgs.map(m => `
-              <div class="chat-msg ${m.sender === "buyer" ? "me" : "them"}">
-                <div>${m.text}</div>
-                <div class="chat-meta">${m.sender === "buyer" ? "Kamu" : o.tName} · ${m.time}</div>
-              </div>
-            `).join("") : '<div class="mu" style="text-align:center;margin:auto">Pesanan sudah dikonfirmasi penjual. Silakan kirim pesan jika perlu.</div>'}
-          </div>
-          <div style="display:flex;gap:7px">
-            <input id="buyer-chat-inp" placeholder="Balas pesan penjual..." onkeydown="if(event.key==='Enter')kirimChatPembeli('${o.id_pesanan}')"
-              style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg)">
-            <button type="button" class="btn bl" onclick="kirimChatPembeli('${o.id_pesanan}')">Kirim</button>
-          </div>
-        `);
-        const lst = $("buyer-chat-list");
-        if (lst) lst.scrollTop = lst.scrollHeight;
-      };
-
-      window.kirimChatPembeli = function(idPesanan) {
-        const txt = ($("buyer-chat-inp")?.value || "").trim();
-        if (!txt) return;
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        o.chat = o.chat || [];
-        o.chat.push({ sender: "buyer", text: txt, time: new Date().toTimeString().slice(0, 5) });
-        saveOrders();
-        bukaChatPembeli(idPesanan);
-        renderTrackerPembeli();
-      };
-
-      // =====================================================================
-      // KEPADATAN KANTIN & CATATAN PENGELUARAN
-      // =====================================================================
-      function renderCrowd() {
-        $("crowd-list").innerHTML = Object.entries(FACULTY_META).map(([f, info]) => {
-          const color = info.crowd > 75 ? "var(--rd)" : info.crowd > 60 ? "#d97706" : "var(--gr)";
-          return `
-          <div style="margin-bottom:9px">
-            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px">
-              <b>${info.full}</b>
-              <span style="font-weight:800;color:${color}">${info.crowd}% terisi</span>
-            </div>
-            <div style="height:8px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--bd)">
-              <div style="width:${info.crowd}%;height:100%;background:${color}"></div>
-            </div>
-          </div>`;
-        }).join("");
-      }
-
-      function renderExpenses() {
-        const todayTot = EXPENSES.filter(e => e.date === TD()).reduce((s, e) => s + Number(e.amt || 0), 0);
-        const allTot = EXPENSES.reduce((s, e) => s + Number(e.amt || 0), 0);
-        $("exp-kpi").innerHTML = `
-          <div><small>Hari Ini</small><b style="color:var(--bl)">${rp(todayTot)}</b></div>
-          <div><small>Total Bulan Ini</small><b>${rp(allTot)}</b></div>
-          <div><small>Transaksi</small><b>${EXPENSES.length}x</b></div>
-        `;
-        const days = [];
-        for (let i = 6; i >= 0; i--) days.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
-        const vals = days.map(d => EXPENSES.filter(e => e.date === d).reduce((s, e) => s + Number(e.amt || 0), 0));
-        const mx = Math.max(...vals, 1);
-        $("exp-bars").innerHTML = days.map((d, i) => `
-          <div class="bc">
-            <small>${vals[i] ? Math.round(vals[i] / 1000) + "rb" : ""}</small>
-            <i style="height:${Math.max(4, (vals[i] / mx) * 85)}%"></i>
-            <span>${d.slice(8)}/${d.slice(5, 7)}</span>
-          </div>
-        `).join("");
-        $("exp-list").innerHTML = EXPENSES.slice(-5).reverse().map(e => `
-          <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12.5px">
-            <div><b>${e.note || e.cat}</b><div class="mu" style="font-size:11px">${e.date}</div></div>
-            <b style="color:var(--rd)">-${rp(e.amt)}</b>
-          </div>
-        `).join("") || '<p class="mu">Belum ada pengeluaran tercatat.</p>';
-      }
-
-      window.bukaTambahCatat = function() {
-        show(`
-          <h2 style="margin:0 0 10px;font-size:18px">➕ Tambah Catatan Pengeluaran</h2>
-          <input id="ex-note" placeholder="Keterangan (mis. Kopi Susu Kantin FEB)" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:8px">
-          <input id="ex-amt" type="number" step="500" placeholder="Nominal (Rp)" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:10px">
-          <button type="button" class="btn bl" style="width:100%" onclick="simpanCatatManual()">Simpan Catatan</button>
-        `);
-      };
-
-      window.simpanCatatManual = function() {
-        const note = ($("ex-note")?.value || "Jajan Kantin").trim();
-        const amt = Number($("ex-amt")?.value || 0);
-        if (amt <= 0) { toast("⚠️ Masukkan nominal pengeluaran."); return; }
-        EXPENSES.push({ date: TD(), amt, note, cat: "Jajan" });
-        saveExpenses();
-        renderExpenses();
-        hideModal();
-        toast("✅ Pengeluaran berhasil dicatat!");
-      };
-
-      function show(html) { $("mb").innerHTML = html; $("md").classList.add("on"); }
-      window.hideModal = function() { $("md").classList.remove("on"); };
-      window.navJump = function(sel, btn) {
-        document.querySelectorAll(".bnav button").forEach(b => b.classList.remove("on"));
-        if (btn) btn.classList.add("on");
-        document.querySelector(sel)?.scrollIntoView({ behavior: "smooth" });
-      };
-
-      // =====================================================================
-      // PORTAL PENJUAL TERINTEGRASI (LOGIN GOOGLE TERDAFTAR + PASSWORD)
-      // =====================================================================
-      const REGISTERED_SELLERS = [
-        { email: "kantinclaudeholic@gmail.com", password: "claudeholic", owner: "Kantin Claudeholic", tid: 8, role: "Mitra Utama Terdaftar FIB" },
-        { email: "warungbuimi.fib@gmail.com", password: "123", owner: "Bu Imi", tid: 8, role: "Mitra Terdaftar FIB" },
-        { email: "ayamgeprek.ft@gmail.com", password: "123", owner: "Mas Teknik", tid: 1, role: "Mitra Terdaftar FT" },
-        { email: "sotobetawi.feb@gmail.com", password: "123", owner: "Bang Jali", tid: 5, role: "Mitra Terdaftar FEB" },
-        { email: "takor.fisip@gmail.com", password: "123", owner: "Teh Rani Takor", tid: 10, role: "Mitra Terdaftar FISIP" },
-        { email: "baksomipa.ui@gmail.com", password: "123", owner: "Cak Eko", tid: 15, role: "Mitra Terdaftar FMIPA" },
-        { email: "mbakyanti.fib@gmail.com", password: "123", owner: "Mbak Yanti", tid: 19, role: "Mitra Terdaftar FIB" },
-        { email: "satekanhuk.fh@gmail.com", password: "123", owner: "Pak Haji Sate", tid: 13, role: "Mitra Terdaftar FH" }
-      ];
-      let SAVED_GOOGLE_PASSWORDS = {};
-      try { SAVED_GOOGLE_PASSWORDS = JSON.parse(localStorage.getItem("kui_google_pwd_v1") || "{}"); } catch (e) {}
-      function saveGooglePasswords() {
-        try { localStorage.setItem("kui_google_pwd_v1", JSON.stringify(SAVED_GOOGLE_PASSWORDS)); } catch (e) {}
-      }
-      let spSeller = null;
-      try { spSeller = JSON.parse(localStorage.getItem("kui_google_seller_v13") || "null"); } catch (e) {}
-      let spTab = 0;
-      let spPhotoBase64 = "";
-
-      window.bukaPortalPenjual = function(ev) {
-        if (ev) ev.preventDefault();
-        $("buyer-app-shell").style.display = "none";
-        $("cbar").classList.remove("on");
-        $("seller-portal-view").classList.add("on");
-        renderEmbeddedSellerPortal();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return false;
-      };
-
-      window.tutupPortalPenjual = function() {
-        $("seller-portal-view").classList.remove("on");
-        $("buyer-app-shell").style.display = "block";
-        render();
-        renderDenah();
-        renderTrackerPembeli();
-        updateAllCartBars(true);
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      };
-
-      window.spPilihAkun = function(email) {
-        const inpE = $("sp-google-inp"), inpP = $("sp-pass-inp"), errBox = $("sp-login-err");
-        if (errBox) errBox.style.display = "none";
-        if (inpE) inpE.value = email;
-        if (inpP) { inpP.value = ""; inpP.focus(); }
-        toast("🔑 Silakan isi password akun Google terlebih dahulu.");
-      };
-
-      window.spLoginGoogle = function(emailParam) {
-        const email = (emailParam || $("sp-google-inp")?.value || "").trim().toLowerCase();
-        const pass = ($("sp-pass-inp")?.value || "").trim();
-        const errBox = $("sp-login-err");
-        const showSpErr = msg => {
-          if (errBox) { errBox.innerHTML = msg; errBox.style.display = "block"; }
-          toast(msg, 4200);
-        };
-        if (!email) { showSpErr("⚠️ Pilih atau ketik email Google terlebih dahulu."); return; }
-        const found = REGISTERED_SELLERS.find(s => s.email.toLowerCase() === email);
-        if (!found) {
-          showSpErr(`❌ <b>Tenant belum terdaftar.</b> Akun <b>${email}</b> belum terdaftar sebagai mitra KantinUI.`);
-          return;
-        }
-        if (!pass) {
-          showSpErr("🔑 Masukkan <b>password akun Google</b> terlebih dahulu untuk masuk.");
-          $("sp-pass-inp")?.focus();
-          return;
-        }
-        const expectedPass = SAVED_GOOGLE_PASSWORDS[email] || found.password;
-        if (!expectedPass) {
-          if (pass.length < 6) {
-            showSpErr("⚠️ Password akun Google minimal <b>6 karakter</b> untuk verifikasi keamanan.");
-            $("sp-pass-inp")?.focus();
-            return;
-          }
-          SAVED_GOOGLE_PASSWORDS[email] = pass;
-          saveGooglePasswords();
-        } else if (pass !== expectedPass) {
-          showSpErr(`❌ <b>Password akun Google salah!</b> Periksa kembali password untuk <b>${email}</b>.`);
-          $("sp-pass-inp")?.focus();
-          return;
-        }
-        spSeller = { email: found.email, owner: found.owner, tid: found.tid, role: found.role };
-        localStorage.setItem("kui_google_seller_v13", JSON.stringify(spSeller));
-        toast(`✅ Password terverifikasi! Masuk dengan Google: <b>${found.owner}</b>`);
-        renderEmbeddedSellerPortal();
-      };
-
-      window.spLogoutGoogle = function() {
-        spSeller = null;
-        localStorage.removeItem("kui_google_seller_v13");
-        renderEmbeddedSellerPortal();
-      };
-
-      window.spSetTab = function(t) { spTab = t; renderEmbeddedSellerPortal(); };
-
-      window.spKonfirmasi = function(idPesanan) {
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        o.confirmed = true;
-        o.status = "Dikonfirmasi & Diproses";
-        o.chat = o.chat || [];
-        o.chat.push({
-          sender: "seller",
-          text: `Halo ${o.nama}, pesanan ${o.id_pesanan} sudah kami konfirmasi dan sedang disiapkan ya!`,
-          time: new Date().toTimeString().slice(0, 5)
-        });
-        saveOrders();
-        renderEmbeddedSellerPortal();
-        toast(`✅ Pesanan ${idPesanan} dikonfirmasi! Chat pembeli aktif.`);
-      };
-
-      window.spUpdateStatus = function(idPesanan, stBaru) {
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        o.confirmed = true;
-        o.status = stBaru;
-        saveOrders();
-        renderEmbeddedSellerPortal();
-        toast(`🔔 Status ${idPesanan}: <b>${stBaru}</b>`);
-      };
-
-      window.spToggleStok = function(tid, idx) {
-        const t = TENANTS.find(x => x.id === tid);
-        if (!t || !t.menu[idx]) return;
-        t.menu[idx].soldOut = !t.menu[idx].soldOut;
-        saveTenants();
-        renderEmbeddedSellerPortal();
-        toast(t.menu[idx].soldOut ? `🚫 ${t.menu[idx].name} ditandai STOK HABIS.` : `✅ ${t.menu[idx].name} tersedia kembali.`);
-      };
-
-      window.spHandleFoto = function(ev) {
-        const file = ev.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = new Image();
-          img.onload = () => {
-            const c = document.createElement("canvas");
-            const sc = Math.min(1, 360 / img.width);
-            c.width = img.width * sc;
-            c.height = img.height * sc;
-            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-            spPhotoBase64 = c.toDataURL("image/jpeg", 0.78);
-            if ($("sp-foto-prev")) $("sp-foto-prev").innerHTML = `<img src="${spPhotoBase64}" style="width:90px;height:68px;object-fit:cover;border-radius:10px;margin-top:6px">`;
-          };
-          img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      };
-
-      window.spTambahMenu = function(tid) {
-        const name = ($("sp-m-name")?.value || "").trim();
-        const price = Number($("sp-m-price")?.value || 0);
-        const cat = $("sp-m-cat")?.value || "Ayam";
-        const url = ($("sp-m-url")?.value || "").trim();
-        const imgFinal = spPhotoBase64 || url;
-        if (!name || price <= 0) { toast("⚠️ Isi nama makanan dan harga dengan benar."); return; }
-        const t = TENANTS.find(x => x.id === tid);
-        if (!t) return;
-        t.menu.push({ name, price, cat, loves: 1, soldOut: false, img: imgFinal });
-        saveTenants();
-        spPhotoBase64 = "";
-        renderEmbeddedSellerPortal();
-        toast(`✅ Menu <b>${name}</b> ditambahkan ke etalase pembeli!`);
-      };
-
-      window.spBukaChat = function(idPesanan) {
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        const msgs = o.chat || [];
-        show(`
-          <div style="padding-right:38px">
-            <span class="fac-pill">💬 Chat dengan Pembeli (${o.nama})</span>
-            <div style="font-weight:800;font-size:16px">${o.id_pesanan} · ${o.items}</div>
-          </div>
-          <div class="chat-box" id="sp-chat-list">
-            ${msgs.map(m => `
-              <div class="chat-msg ${m.sender === "seller" ? "me" : "them"}">
-                <div>${m.text}</div>
-                <div class="chat-meta">${m.sender === "seller" ? "Kamu (Penjual)" : o.nama} · ${m.time}</div>
-              </div>
-            `).join("")}
-          </div>
-          <div style="display:flex;gap:7px">
-            <input id="sp-chat-inp" placeholder="Tulis pesan ke pembeli (mis. info lauk kurang)..." onkeydown="if(event.key==='Enter')spKirimChat('${o.id_pesanan}')"
-              style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg)">
-            <button type="button" class="btn bl" onclick="spKirimChat('${o.id_pesanan}')">Kirim</button>
-          </div>
-        `);
-      };
-
-      window.spKirimChat = function(idPesanan) {
-        const txt = ($("sp-chat-inp")?.value || "").trim();
-        if (!txt) return;
-        loadOrders();
-        const o = ORDERS.find(x => x.id_pesanan === idPesanan);
-        if (!o) return;
-        o.chat = o.chat || [];
-        o.chat.push({ sender: "seller", text: txt, time: new Date().toTimeString().slice(0, 5) });
-        saveOrders();
-        spBukaChat(idPesanan);
-        renderEmbeddedSellerPortal();
-      };
-
-      function renderEmbeddedSellerPortal() {
-        const box = $("sp-app-body");
-        if (!box) return;
-        if (!spSeller) {
-          box.innerHTML = `
-            <div class="sp-card" style="text-align:center">
-              <div style="font-size:34px;margin-bottom:4px">🔐</div>
-              <h2 style="margin:0 0 6px;font-size:18px">Login Akun Google Mitra Penjual</h2>
-              <p class="mu" style="margin:0 0 12px">Pilih atau ketik akun terdaftar lalu masukkan <b>password akun</b>.</p>
-              <div id="sp-login-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;border-radius:11px;padding:9px 11px;font-size:12px;text-align:left;margin-bottom:10px"></div>
-              <div style="text-align:left">
-                ${REGISTERED_SELLERS.map(s => {
-                  const t = TENANTS.find(x => x.id === s.tid);
-                  return `<div class="sp-acc-item" onclick="spPilihAkun('${s.email}')">
-                    <div class="sp-avatar">${s.owner.charAt(0)}</div>
-                    <div style="flex:1;min-width:0">
-                      <div style="font-weight:800;font-size:13px">${s.owner} · ${t ? t.name : s.role}</div>
-                      <div style="font-size:11.5px;color:var(--bl)">${s.email}</div>
-                    </div>
-                    <span style="font-weight:800;font-size:11.5px;color:var(--gr)">Pilih →</span>
-                  </div>`;
-                }).join("")}
-              </div>
-              <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:10px;text-align:left">
-                <input id="sp-google-inp" type="email" value="kantinclaudeholic@gmail.com" placeholder="Ketik email Google terdaftar..." style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:8px">
-                <input id="sp-pass-inp" type="password" placeholder="Masukkan password akun Google (min. 6 karakter)..." onkeydown="if(event.key==='Enter')spLoginGoogle()" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:9px">
-                <button type="button" class="btn bl" style="width:100%" onclick="spLoginGoogle()">Masuk ke Portal Penjual</button>
-              </div>
-            </div>`;
-          return;
-        }
-
-        loadOrders();
-        const t = TENANTS.find(x => x.id === spSeller.tid) || TENANTS[0];
-        const myOrders = ORDERS.filter(o => o.tid === t.id);
-        const totalIncome = myOrders.reduce((s, o) => s + Number(o.total || 0), 0);
-        const totalLoves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
-
-        let bodyHTML = "";
-        if (spTab === 0) {
-          bodyHTML = `<div class="sp-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-              <b>🔔 Pesanan Masuk &amp; Rincian (${myOrders.length})</b>
-              <button type="button" class="chip" onclick="bunyikanBel();toast('🔔 Tes bel notifikasi kasir!')">🔊 Tes Bel</button>
-            </div>
-            ${myOrders.length ? myOrders.map(o => {
-              const isNew = o.status === "Menunggu Konfirmasi";
-              return `<div style="border:2px solid ${isNew ? "var(--gr)" : "var(--bd)"};border-radius:14px;padding:11px;margin-bottom:10px">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <b>${o.id_pesanan} · ${o.nama}</b>
-                  <span class="badge-st">${o.status}</span>
-                </div>
-                <div style="font-size:12.5px;margin:6px 0">${o.items} — <b style="color:var(--gr)">${rp(o.total)}</b></div>
-                ${o.note ? `<div style="font-size:11.5px;color:#b45309;margin-bottom:6px">📝 Catatan: "${o.note}"</div>` : ""}
-                <div style="display:flex;flex-wrap:wrap;gap:6px">
-                  ${isNew
-                    ? `<button type="button" class="btn gr" style="min-height:34px;padding:6px 11px;font-size:12px" onclick="spKonfirmasi('${o.id_pesanan}')">✅ Konfirmasi Pesanan</button>`
-                    : `<button type="button" class="btn bl" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spUpdateStatus('${o.id_pesanan}','Sedang Dimasak')">🍳 Dimasak</button>
-                       <button type="button" class="btn gr" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spUpdateStatus('${o.id_pesanan}','Siap Diambil!')">🛍️ Siap</button>
-                       <button type="button" class="btn" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spBukaChat('${o.id_pesanan}')">💬 Chat (${(o.chat || []).length})</button>`
-                  }
-                </div>
-              </div>`;
-            }).join("") : '<p class="mu">Belum ada pesanan masuk. Pesan menu dari Web Pembeli untuk menguji notifikasi!</p>'}
-          </div>`;
-        } else if (spTab === 1) {
-          bodyHTML = `
-            <div class="sp-card">
-              <b>➕ Tambah Menu Baru (+ Foto Makanan)</b>
-              <input id="sp-m-name" placeholder="Nama Makanan / Minuman" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:8px">
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
-                <input id="sp-m-price" type="number" step="500" placeholder="Harga (Rp)" style="padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg)">
-                <select id="sp-m-cat" style="padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg)">
-                  <option value="Ayam">Ayam</option><option value="Nasi">Nasi</option><option value="Mie">Mie</option><option value="Minuman">Minuman</option><option value="Snack">Snack</option><option value="Sehat">Sehat</option>
-                </select>
-              </div>
-              <input id="sp-m-file" type="file" accept="image/*" onchange="spHandleFoto(event)" style="width:100%;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:6px">
-              <input id="sp-m-url" placeholder="Atau URL Foto Makanan (opsional)" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:6px">
-              <div id="sp-foto-prev"></div>
-              <button type="button" class="btn bl" style="width:100%;margin-top:8px" onclick="spTambahMenu(${t.id})">💾 Simpan Menu Baru</button>
-            </div>
-            <div class="sp-card">
-              <b>📋 Daftar Menu &amp; Update Stok Habis</b>
-              <div style="margin-top:8px">
-                ${t.menu.map((m, idx) => `
-                  <div class="mi ${m.soldOut ? "soldout" : ""}">
-                    <div class="ph m">${foodPhotoHTML(m.name, m.cat, t.hue + idx * 20, t.id + idx, m.img)}</div>
-                    <div class="x">
-                      <b>${m.name}</b>
-                      <div class="mu">${rp(m.price)} · ❤️ ${m.loves || 0}</div>
-                      ${m.soldOut ? '<span class="sold-badge">STOK HABIS</span>' : '<span class="badge-st">Tersedia</span>'}
-                    </div>
-                    <button type="button" class="btn ${m.soldOut ? "gr" : ""}" style="min-height:34px;padding:6px 10px;font-size:11px" onclick="spToggleStok(${t.id}, ${idx})">
-                      ${m.soldOut ? "✅ Tersedia" : "🚫 Stok Habis"}
-                    </button>
-                  </div>
-                `).join("")}
-              </div>
-            </div>`;
-        } else {
-          bodyHTML = `<div class="sp-card">
-            <b>💰 Pencatatan Pemasukan (${t.name})</b>
-            <div class="kpi">
-              <div><small>Total Pemasukan</small><b style="color:var(--gr)">${rp(totalIncome)}</b></div>
-              <div><small>Pesanan Lunas</small><b>${myOrders.length}x</b></div>
-              <div><small>Total Love</small><b style="color:var(--rd)">❤️ ${totalLoves}</b></div>
-            </div>
-            ${myOrders.map(o => `
-              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
-                <div><b>${o.id_pesanan}</b> · ${o.nama}<div class="mu">${o.items}</div></div>
-                <b style="color:var(--gr)">+${rp(o.total)}</b>
-              </div>
-            `).join("") || '<p class="mu">Belum ada transaksi masuk.</p>'}
-          </div>`;
-        }
-
-        box.innerHTML = `
-          <div class="sp-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-              <div>
-                <span class="badge-st">✅ Google: ${spSeller.email}</span>
-                <div style="font-weight:800;font-size:17px;margin-top:4px">${t.name} (${t.fac})</div>
-                <div class="mu">Pemilik: <b>${spSeller.owner}</b> · ❤️ ${totalLoves} Love</div>
-              </div>
-              <button type="button" class="chip" onclick="spLogoutGoogle()">Keluar</button>
-            </div>
-          </div>
-          <div class="tabs">
-            <button type="button" class="chip ${spTab === 0 ? "on" : ""}" onclick="spSetTab(0)">🔔 Pesanan (${myOrders.length})</button>
-            <button type="button" class="chip ${spTab === 1 ? "on" : ""}" onclick="spSetTab(1)">🍽️ Menu &amp; Stok</button>
-            <button type="button" class="chip ${spTab === 2 ? "on" : ""}" onclick="spSetTab(2)">💰 Pemasukan</button>
-          </div>
-          ${bodyHTML}
-        `;
-      }
-
-      window.addEventListener("storage", () => {
-        loadTenants();
-        loadOrders();
-        loadExpenses();
-        render();
-        renderDenah();
-        renderTrackerPembeli();
-        renderExpenses();
-        if ($("seller-portal-view").classList.contains("on")) renderEmbeddedSellerPortal();
-      });
-
-      // Jalankan seluruh komponen saat halaman pertama kali dibuka
-      drawBikunMap();
-      setupMapGestures();
-      render();
-      renderDenah();
-      renderCrowd();
-      renderExpenses();
-      renderTrackerPembeli();
-    })();
+// (() => {
+//       // Fungsi bantu singkat untuk memilih elemen DOM, format Rupiah, dan tanggal hari ini
+//       const $ = id => document.getElementById(id);
+//       const rp = n => "Rp " + Number(n || 0).toLocaleString("id-ID");
+//       const TD = () => new Date().toISOString().slice(0, 10);
+
+//       // Menampilkan notifikasi pop-up singkat di bagian atas layar
+//       function toast(msg, ms = 2800) {
+//         const el = $("toast");
+//         el.innerHTML = msg;
+//         el.classList.add("on");
+//         clearTimeout(window._tTimer);
+//         window._tTimer = setTimeout(() => el.classList.remove("on"), ms);
+//       }
+
+//       // Tombol pengubah tema terang (Light) dan gelap (Dark)
+//       $("th").onclick = () => {
+//         const dark = document.documentElement.getAttribute("data-theme") === "dark";
+//         document.documentElement.setAttribute("data-theme", dark ? "light" : "dark");
+//       };
+
+//       // Koordinat GPS nyata setiap halte & fakultas di Kampus UI Depok untuk rumus Haversine
+//       const GPS_COORDS = {
+//         AsramaUI: { lat: -6.3532, lon: 106.8304, label: "Asrama UI" },
+//         Menwa: { lat: -6.3568, lon: 106.8318, label: "Menwa" },
+//         StasiunUI: { lat: -6.3606, lon: 106.8317, label: "Stasiun UI" },
+//         FEB: { lat: -6.3605, lon: 106.8266, label: "Kantin FEB" },
+//         FIB: { lat: -6.3635, lon: 106.8272, label: "Kansas FIB" },
+//         FISIP: { lat: -6.3627, lon: 106.8295, label: "Takor FISIP" },
+//         FPsi: { lat: -6.3633, lon: 106.8304, label: "Kantin FPsi" },
+//         FT: { lat: -6.3621, lon: 106.8242, label: "Kantin Teknik (FT)" },
+//         FH: { lat: -6.3641, lon: 106.8315, label: "Kanhuk FH" },
+//         MasjidUI: { lat: -6.3652, lon: 106.8314, label: "Masjid UI" },
+//         StPondokCina: { lat: -6.3688, lon: 106.8322, label: "St. Pondok Cina" },
+//         Vokasi: { lat: -6.3684, lon: 106.8238, label: "Kantin Vokasi" },
+//         FMIPA: { lat: -6.3698, lon: 106.8264, label: "Kantin FMIPA" },
+//         FKM: { lat: -6.3712, lon: 106.8298, label: "Kantin FKM" }
+//       };
+
+//       // Informasi lengkap setiap kantin fakultas di UI
+//       const FACULTY_META = {
+//         FT: { full: "Kantin Teknik (FT)", spot: "Balai Makan Teknik", crowd: 78 },
+//         FEB: { full: "Kantin FEB UI", spot: "Kantin Selasar FEB", crowd: 82 },
+//         FIB: { full: "Kantin Sastra (Kansas FIB)", spot: "Pelataran Kansas", crowd: 85 },
+//         FISIP: { full: "Taman Korea (Takor FISIP)", spot: "Taman Korea", crowd: 74 },
+//         FPsi: { full: "Kantin Psikologi (FPsi)", spot: "Teras Psikologi", crowd: 56 },
+//         FH: { full: "Kantin Hukum (Kanhuk FH)", spot: "Kanhuk", crowd: 62 },
+//         Vokasi: { full: "Kantin Vokasi UI", spot: "Pujasera Vokasi", crowd: 68 },
+//         FMIPA: { full: "Kantin FMIPA UI", spot: "Kantin Dallas MIPA", crowd: 71 },
+//         FKM: { full: "Kantin FKM UI", spot: "Kantin Sehat FKM", crowd: 54 }
+//       };
+
+//       // Katalog 32 tenant di 9 fakultas UI dengan foto sajian asli & jumlah Love ❤️
+//       const INITIAL_TENANTS = [
+//         { id: 1, fac: "FT", stallNo: 1, name: "Ayam Geprek Mas Teknik", sp: "Ayam", hue: 24, desc: "Ayam geprek sambal bawang pedas nampol favorit anak Teknik.",
+//           menu: [
+//             { name: "Ayam Geprek Sambal Bawang", price: 16000, cat: "Ayam", loves: 158, soldOut: false, img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Ayam Geprek Keju Lumer", price: 19000, cat: "Ayam", loves: 112, soldOut: false, img: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Es Teh Lemon Segar", price: 5000, cat: "Minuman", loves: 74, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 2, fac: "FT", stallNo: 2, name: "Mie Ayam & Pangsit Pak Kumis", sp: "Mie", hue: 38, desc: "Mie ayam yamin manis gurih dengan pangsit rebus.",
+//           menu: [
+//             { name: "Mie Ayam Yamin Komplit", price: 15000, cat: "Mie", loves: 134, soldOut: false, img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Bakso Kuah Pangsit", price: 16000, cat: "Mie", loves: 89, soldOut: false, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 3, fac: "FT", stallNo: 3, name: "Nasi Padang Uni Salma", sp: "Nasi", hue: 14, desc: "Rendang dan ayam pop bumbu Minang otentik.",
+//           menu: [
+//             { name: "Nasi Rendang Daging", price: 21000, cat: "Nasi", loves: 145, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Nasi Ayam Pop Sambal Ijo", price: 18000, cat: "Ayam", loves: 109, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 4, fac: "FT", stallNo: 4, name: "Kopi & Roti Bakar Bengkel", sp: "Snack", hue: 28, desc: "Kopi susu gula aren dan roti bakar cokelat keju.",
+//           menu: [
+//             { name: "Es Kopi Susu Gula Aren", price: 12000, cat: "Minuman", loves: 128, soldOut: false, img: "https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Roti Bakar Cokelat Keju", price: 13000, cat: "Snack", loves: 81, soldOut: false, img: "https://images.unsplash.com/photo-1525351484163-7529414342d8?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 5, fac: "FEB", stallNo: 1, name: "Soto Betawi Bang Jali", sp: "Nasi", hue: 36, desc: "Soto Betawi kuah susu gurih dengan emping melinjo.",
+//           menu: [
+//             { name: "Soto Betawi Daging + Nasi", price: 22000, cat: "Nasi", loves: 176, soldOut: false, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Soto Ayam Bening", price: 17000, cat: "Nasi", loves: 94, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 6, fac: "FEB", stallNo: 2, name: "Chicken Katsu Curry FEB", sp: "Ayam", hue: 42, desc: "Chicken katsu renyah siram saus kari Jepang.",
+//           menu: [
+//             { name: "Chicken Katsu Curry Rice", price: 20000, cat: "Ayam", loves: 154, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Matcha Latte Dingin", price: 14000, cat: "Minuman", loves: 98, soldOut: false, img: "https://images.unsplash.com/photo-1515823064-d6e0c04616a7?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 7, fac: "FEB", stallNo: 3, name: "Gado-Gado & Ketoprak Ibu Dewi", sp: "Sehat", hue: 110, desc: "Bumbu kacang ulek dadakan dengan sayuran segar.",
+//           menu: [
+//             { name: "Gado-Gado Lontong Spesial", price: 15000, cat: "Sehat", loves: 119, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Ketoprak Telur Dadar", price: 14000, cat: "Sehat", loves: 88, soldOut: false, img: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 18, fac: "FEB", stallNo: 4, name: "Dimsum & Siomay Mentai", sp: "Snack", hue: 12, desc: "Dimsum ayam udang kukus saus mentai bakar.",
+//           menu: [
+//             { name: "Dimsum Mentai (4 pcs)", price: 16000, cat: "Snack", loves: 137, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 8, fac: "FIB", stallNo: 1, name: "Nasi Goreng Kansas Bu Imi", sp: "Nasi", hue: 18, desc: "Nasi goreng kampung & kwetiau legendaris Bu Imi di Kansas FIB.",
+//           menu: [
+//             { name: "Nasi Goreng Kampung Bu Imi", price: 16000, cat: "Nasi", loves: 198, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Kwetiau Goreng Sapi Spesial", price: 18000, cat: "Mie", loves: 132, soldOut: false, img: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Es Teh Manis Bu Imi", price: 4000, cat: "Minuman", loves: 91, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 9, fac: "FIB", stallNo: 2, name: "Pecel Lele & Ayam Kremes Sastra", sp: "Ayam", hue: 30, desc: "Ayam kremes renyah dengan sambal terasi segar.",
+//           menu: [
+//             { name: "Nasi Ayam Kremes + Sambal", price: 17000, cat: "Ayam", loves: 141, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 19, fac: "FIB", stallNo: 3, name: "Ayam Penyet Mbak Yanti", sp: "Ayam", hue: 22, desc: "Ayam goreng lengkuas penyet sambal tomat terasi.",
+//           menu: [
+//             { name: "Ayam Penyet Sambal Terasi", price: 16000, cat: "Ayam", loves: 118, soldOut: false, img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 20, fac: "FIB", stallNo: 4, name: "Es Podeng & Jus Buah Kansas", sp: "Minuman", hue: 340, desc: "Aneka jus buah segar dan es podeng alpukat.",
+//           menu: [
+//             { name: "Jus Alpukat Cokelat", price: 11000, cat: "Minuman", loves: 115, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 10, fac: "FISIP", stallNo: 1, name: "Korean Street Food Takor", sp: "Mie", hue: 352, desc: "Tteokbokki dan rabokki hangat di Taman Korea FISIP.",
+//           menu: [
+//             { name: "Rabokki Keju Mozzarella", price: 20000, cat: "Mie", loves: 167, soldOut: false, img: "https://images.unsplash.com/photo-1580651315530-69c8e0026377?auto=format&fit=crop&w=480&q=80" },
+//             { name: "Kimbap Tuna Mayo", price: 16000, cat: "Snack", loves: 121, soldOut: false, img: "https://images.unsplash.com/photo-1553621042-f6e147245754?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 11, fac: "FISIP", stallNo: 2, name: "Nasi Kulit Crispy Bang Brewok", sp: "Ayam", hue: 26, desc: "Nasi kulit ayam krispi serundeng pedas.",
+//           menu: [
+//             { name: "Nasi Kulit Ayam Krispi", price: 17000, cat: "Ayam", loves: 149, soldOut: false, img: "https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 21, fac: "FISIP", stallNo: 3, name: "Batagor & Siomay Bandung Takor", sp: "Snack", hue: 34, desc: "Batagor ikan tenggiri bumbu kacang kental.",
+//           menu: [
+//             { name: "Batagor Komplit Bumbu Kacang", price: 14000, cat: "Snack", loves: 108, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 22, fac: "FISIP", stallNo: 4, name: "Thai Tea & Boba Takor", sp: "Minuman", hue: 20, desc: "Original Thai tea dan brown sugar boba segar.",
+//           menu: [
+//             { name: "Original Thai Tea Large", price: 10000, cat: "Minuman", loves: 114, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 12, fac: "FPsi", stallNo: 1, name: "Rice Bowl Teriyaki Psikologi", sp: "Ayam", hue: 40, desc: "Chicken teriyaki rice bowl dengan telur mata sapi.",
+//           menu: [
+//             { name: "Chicken Teriyaki Rice Bowl", price: 18000, cat: "Ayam", loves: 126, soldOut: false, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 23, fac: "FPsi", stallNo: 2, name: "Salad & Smoothie Bowl FPsi", sp: "Sehat", hue: 130, desc: "Menu sehat segar penuh vitamin untuk kuliah seharian.",
+//           menu: [
+//             { name: "Chicken Caesar Salad", price: 19000, cat: "Sehat", loves: 96, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 24, fac: "FPsi", stallNo: 3, name: "Waffle & Kopi Tenang", sp: "Snack", hue: 28, desc: "Belgian waffle hangat dengan es krim vanila.",
+//           menu: [
+//             { name: "Waffle Cokelat Pisang", price: 15000, cat: "Snack", loves: 87, soldOut: false, img: "https://images.unsplash.com/photo-1525351484163-7529414342d8?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 13, fac: "FH", stallNo: 1, name: "Sate Ayam & Lontong Kanhuk", sp: "Ayam", hue: 32, desc: "Sate ayam bumbu kacang halus dengan lontong.",
+//           menu: [
+//             { name: "Sate Ayam 10 Tusuk + Lontong", price: 18000, cat: "Ayam", loves: 133, soldOut: false, img: "https://images.unsplash.com/photo-1529563021893-cc83c992d75d?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 25, fac: "FH", stallNo: 2, name: "Nasi Uduk & Ayam Bakar Kanhuk", sp: "Nasi", hue: 18, desc: "Nasi uduk gurih santan dengan ayam bakar madu.",
+//           menu: [
+//             { name: "Nasi Uduk Ayam Bakar Madu", price: 19000, cat: "Nasi", loves: 117, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 26, fac: "FH", stallNo: 3, name: "Es Jeruk & Kelapa Muda FH", sp: "Minuman", hue: 46, desc: "Es kelapa muda murni dan jeruk peras.",
+//           menu: [
+//             { name: "Es Kelapa Muda Gula Aren", price: 10000, cat: "Minuman", loves: 92, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 14, fac: "Vokasi", stallNo: 1, name: "Nasi Bakar Spesial Vokasi", sp: "Nasi", hue: 120, desc: "Nasi bakar ayam suwir kemangi harum daun pisang.",
+//           menu: [
+//             { name: "Nasi Bakar Ayam Kemangi", price: 15000, cat: "Nasi", loves: 129, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 27, fac: "Vokasi", stallNo: 2, name: "Seblak Prasmanan Teh Neng", sp: "Mie", hue: 8, desc: "Seblak kerupuk pedas kuah kencur segar.",
+//           menu: [
+//             { name: "Seblak Komplit Ceker & Bakso", price: 15000, cat: "Mie", loves: 118, soldOut: false, img: "https://images.unsplash.com/photo-1580651315530-69c8e0026377?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 28, fac: "Vokasi", stallNo: 3, name: "Cireng Bumbu Rujak Vokasi", sp: "Snack", hue: 36, desc: "Cireng krispi cocol sambal rujak gula merah.",
+//           menu: [
+//             { name: "Cireng Crispy Bumbu Rujak", price: 10000, cat: "Snack", loves: 95, soldOut: false, img: "https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 15, fac: "FMIPA", stallNo: 1, name: "Bakso Malang Cak Eko", sp: "Mie", hue: 16, desc: "Bakso urat dan pangsit goreng kriuk Dallas MIPA.",
+//           menu: [
+//             { name: "Bakso Malang Komplit", price: 15000, cat: "Mie", loves: 148, soldOut: false, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 16, fac: "FMIPA", stallNo: 2, name: "Ayam Taliwang & Plecing MIPA", sp: "Ayam", hue: 10, desc: "Ayam bakar bumbu pedas khas Lombok.",
+//           menu: [
+//             { name: "Nasi Ayam Taliwang Pedas", price: 19000, cat: "Ayam", loves: 116, soldOut: false, img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 29, fac: "FMIPA", stallNo: 3, name: "Nasi Campur Bali Bli Made", sp: "Nasi", hue: 28, desc: "Ayam betutu suwir, sate lilit, dan sambal matah.",
+//           menu: [
+//             { name: "Nasi Campur Ayam Betutu", price: 18000, cat: "Nasi", loves: 124, soldOut: false, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 30, fac: "FMIPA", stallNo: 4, name: "Es Cendol Dawet MIPA", sp: "Minuman", hue: 115, desc: "Cendol pandan santan segar gula aren.",
+//           menu: [
+//             { name: "Es Cendol Dawet Gula Aren", price: 9000, cat: "Minuman", loves: 84, soldOut: false, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 17, fac: "FKM", stallNo: 1, name: "Nasi Merah & Ayam Panggang Sehat", sp: "Sehat", hue: 135, desc: "Menu rendah minyak dan tinggi protein favorit FKM.",
+//           menu: [
+//             { name: "Nasi Merah Ayam Panggang Herb", price: 19000, cat: "Sehat", loves: 131, soldOut: false, img: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 31, fac: "FKM", stallNo: 2, name: "Sop Ikan & Sayur Bening FKM", sp: "Sehat", hue: 195, desc: "Sop ikan dori kuah segar dengan sayur bayam.",
+//           menu: [
+//             { name: "Sop Ikan Dori + Nasi", price: 20000, cat: "Sehat", loves: 102, soldOut: false, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         },
+//         { id: 32, fac: "FKM", stallNo: 3, name: "Cold Pressed Juice Bar FKM", sp: "Minuman", hue: 85, desc: "Jus sayur dan buah murni tanpa gula tambahan.",
+//           menu: [
+//             { name: "Green Detox Juice (Apel & Bayam)", price: 13000, cat: "Minuman", loves: 89, soldOut: false, img: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?auto=format&fit=crop&w=480&q=80" }
+//           ]
+//         }
+//       ];
+
+//       // Penyimpanan data di localStorage agar sinkron real-time antara Pembeli & Penjual
+//       let TENANTS = [];
+//       function loadTenants() {
+//         try {
+//           const saved = JSON.parse(localStorage.getItem("kui_tenants_v14") || "null");
+//           if (Array.isArray(saved) && saved.length) { TENANTS = saved; return; }
+//         } catch (e) {}
+//         TENANTS = JSON.parse(JSON.stringify(INITIAL_TENANTS));
+//         saveTenants();
+//       }
+//       function saveTenants() {
+//         try { localStorage.setItem("kui_tenants_v14", JSON.stringify(TENANTS)); } catch (e) {}
+//       }
+
+//       let ORDERS = [];
+//       function loadOrders() {
+//         try { ORDERS = JSON.parse(localStorage.getItem("kui_orders_v14") || "[]"); } catch (e) { ORDERS = []; }
+//       }
+//       function saveOrders() {
+//         try { localStorage.setItem("kui_orders_v14", JSON.stringify(ORDERS)); } catch (e) {}
+//       }
+
+//       let EXPENSES = [];
+//       function loadExpenses() {
+//         try { EXPENSES = JSON.parse(localStorage.getItem("kui_expenses_v14") || "[]"); } catch (e) { EXPENSES = []; }
+//       }
+//       function saveExpenses() {
+//         try { localStorage.setItem("kui_expenses_v14", JSON.stringify(EXPENSES)); } catch (e) {}
+//       }
+
+//       let LOVED_KEYS = {};
+//       try { LOVED_KEYS = JSON.parse(localStorage.getItem("kui_loved_v14") || "{}"); } catch (e) {}
+//       function saveLoved() {
+//         try { localStorage.setItem("kui_loved_v14", JSON.stringify(LOVED_KEYS)); } catch (e) {}
+//       }
+
+//       loadTenants();
+//       loadOrders();
+//       loadExpenses();
+
+//       // State tampilan pembeli (denahFac awalnya null agar denah hanya muncul ketika fakultas dipilih)
+//       const S = {
+//         facFilter: "ALL",
+//         catFilter: "Semua",
+//         denahFac: null,
+//         cart: [],
+//         mapMode: "kantin",
+//         routeA: null,
+//         routeB: null
+//       };
+
+//       // Menampilkan foto makanan dengan gambar cadangan SVG otomatis bila offline
+//       function foodPhotoHTML(name, cat, hue, seed, imgUrl) {
+//         const emoji = cat === "Minuman" ? "🧋" : cat === "Mie" ? "🍜" : cat === "Snack" ? "🥟" : cat === "Sehat" ? "🥗" : "🍛";
+//         const fallbackSvg = `data:image/svg+xml;utf8,${encodeURIComponent(
+//           `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="hsl(${hue % 360},72%,46%)"/><text x="60" y="72" text-anchor="middle" font-size="46">${emoji}</text></svg>`
+//         )}`;
+//         if (imgUrl && imgUrl.length > 4) {
+//           return `<img src="${imgUrl}" alt="${name}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackSvg}'">`;
+//         }
+//         return `<img src="${fallbackSvg}" alt="${name}">`;
+//       }
+
+//       // =====================================================================
+//       // LOGIKA PETA RUTE BIKUN UI (JALUR MERAH & BIRU)
+//       // =====================================================================
+//       const MAP_NODES = [
+//         { id: "AsramaUI", x: 340, y: 120, fac: null, label: "Asrama UI", lx: 340, ly: 92, anchor: "middle", big: true },
+//         { id: "Menwa", x: 690, y: 165, fac: null, label: "Menwa", lx: 722, ly: 170, anchor: "start", big: true },
+//         { id: "StasiunUI", x: 690, y: 265, fac: null, label: "Stasiun UI", lx: 722, ly: 270, anchor: "start", big: true },
+//         { id: "FEB", x: 265, y: 385, fac: "FEB", label: "FEB", lx: 265, ly: 354, anchor: "middle", big: true },
+//         { id: "FIB", x: 375, y: 385, fac: "FIB", label: "FIB", lx: 375, ly: 354, anchor: "middle", big: true },
+//         { id: "FISIP", x: 485, y: 385, fac: "FISIP", label: "FISIP", lx: 485, ly: 354, anchor: "middle", big: true },
+//         { id: "FPsi", x: 590, y: 385, fac: "FPsi", label: "FPsi", lx: 590, ly: 354, anchor: "middle", big: true },
+//         { id: "FT", x: 180, y: 445, fac: "FT", label: "FT", lx: 145, ly: 451, anchor: "end", big: true },
+//         { id: "FH", x: 690, y: 495, fac: "FH", label: "FH", lx: 722, ly: 501, anchor: "start", big: true },
+//         { id: "MasjidUI", x: 676, y: 615, fac: null, label: "Masjid UI", lx: 654, ly: 620, anchor: "end", big: false },
+//         { id: "StPondokCina", x: 690, y: 735, fac: null, label: "St. Pondok Cina", lx: 722, ly: 741, anchor: "start", big: true },
+//         { id: "Vokasi", x: 180, y: 785, fac: "Vokasi", label: "Vokasi", lx: 145, ly: 791, anchor: "end", big: true },
+//         { id: "Pusgiwa", x: 270, y: 865, fac: null, label: "Pusgiwa", lx: 270, ly: 840, anchor: "middle", big: false },
+//         { id: "Farmasi", x: 385, y: 865, fac: null, label: "Farmasi", lx: 385, ly: 840, anchor: "middle", big: false },
+//         { id: "BalaiSidang", x: 500, y: 865, fac: null, label: "Balai Sidang", lx: 500, ly: 830, anchor: "middle", big: false },
+//         { id: "Balairung", x: 615, y: 865, fac: null, label: "Balairung", lx: 615, ly: 840, anchor: "middle", big: false },
+//         { id: "SOR", x: 295, y: 892, fac: null, label: "SOR", lx: 295, ly: 924, anchor: "middle", big: false },
+//         { id: "FMIPA", x: 385, y: 925, fac: "FMIPA", label: "FMIPA", lx: 365, ly: 956, anchor: "end", big: false },
+//         { id: "FIK", x: 470, y: 965, fac: null, label: "FIK", lx: 470, ly: 996, anchor: "middle", big: false },
+//         { id: "RSUI", x: 565, y: 965, fac: null, label: "RSUI", lx: 565, ly: 996, anchor: "middle", big: false },
+//         { id: "FKM", x: 655, y: 965, fac: "FKM", label: "FKM", lx: 655, ly: 996, anchor: "middle", big: false },
+//         { id: "RIK", x: 704, y: 895, fac: null, label: "RIK", lx: 730, ly: 901, anchor: "start", big: false }
+//       ];
+
+//       let mapView = { x: 40, y: 40, w: 920, h: 1120, dragging: false, moved: false, sx: 0, sy: 0 };
+
+//       function applyMapViewBox() {
+//         const svg = $("ui-map");
+//         if (svg) svg.setAttribute("viewBox", `${mapView.x} ${mapView.y} ${mapView.w} ${mapView.h}`);
+//       }
+
+//       window.zoomMap = function(factor) {
+//         const nw = Math.min(920, Math.max(420, mapView.w * factor));
+//         const nh = Math.min(1120, Math.max(510, mapView.h * factor));
+//         mapView.x += (mapView.w - nw) / 2;
+//         mapView.y += (mapView.h - nh) / 2;
+//         mapView.w = nw;
+//         mapView.h = nh;
+//         applyMapViewBox();
+//       };
+
+//       // Mengembalikan zoom/geser peta ke posisi awal dan menutup denah fakultas aktif
+//       window.focusMapCenter = function() {
+//         mapView.x = 40;
+//         mapView.y = 40;
+//         mapView.w = 920;
+//         mapView.h = 1120;
+//         applyMapViewBox();
+//         S.routeA = null;
+//         S.routeB = null;
+//         S.facFilter = "ALL";
+//         S.denahFac = null;
+//         $("route-info").textContent = "Peta di-reset ke tengah · Menampilkan semua kantin";
+//         drawBikunMap();
+//         renderDenah();
+//         render();
+//       };
+
+//       window.setMapMode = function(mode) {
+//         S.mapMode = mode;
+//         S.routeA = null;
+//         S.routeB = null;
+//         $("mode-kantin").classList.toggle("on", mode === "kantin");
+//         $("mode-rute").classList.toggle("on", mode === "rute");
+//         $("route-info").textContent = mode === "kantin"
+//           ? "Ketuk pin fakultas untuk melihat kantin & denahnya"
+//           : "Ketuk 2 titik halte/fakultas untuk mengukur jarak Bikun";
+//         drawBikunMap();
+//       };
+
+//       // Menghitung jarak nyata (meter) antara 2 lokasi menggunakan rumus Haversine
+//       function haversineMeters(a, b) {
+//         const c1 = GPS_COORDS[a], c2 = GPS_COORDS[b];
+//         if (!c1 || !c2) return 450;
+//         const R = 6371000;
+//         const dLat = ((c2.lat - c1.lat) * Math.PI) / 180;
+//         const dLon = ((c2.lon - c1.lon) * Math.PI) / 180;
+//         const s = Math.sin(dLat / 2) ** 2 + Math.cos((c1.lat * Math.PI) / 180) * Math.cos((c2.lat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+//         return Math.round(R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s)) * 1.18);
+//       }
+
+//       // Membuka kantin fakultas & memunculkan denah kantin fakultas tersebut
+//       window.bukaDenahFakultas = function(fac, autoScroll = true) {
+//         S.facFilter = fac;
+//         S.denahFac = fac;
+//         $("route-info").innerHTML = `📍 Menampilkan <b>${FACULTY_META[fac]?.full || fac}</b>`;
+//         drawBikunMap();
+//         render();
+//         renderDenah();
+//         if (autoScroll) {
+//           setTimeout(() => {
+//             document.querySelector("#denah")?.scrollIntoView({ behavior: "smooth", block: "start" });
+//           }, 80);
+//         }
+//       };
+
+//       window.tutupDenah = function() {
+//         S.denahFac = null;
+//         renderDenah();
+//       };
+
+//       window.handleMapNodeClick = function(nodeId) {
+//         if (mapView.moved) return;
+//         const node = MAP_NODES.find(n => n.id === nodeId);
+//         if (!node) return;
+
+//         if (S.mapMode === "rute") {
+//           if (!S.routeA || S.routeB) {
+//             S.routeA = nodeId;
+//             S.routeB = null;
+//             $("route-info").innerHTML = `Titik awal: <b>${node.label}</b> · Ketuk titik tujuan`;
+//           } else if (S.routeA !== nodeId) {
+//             S.routeB = nodeId;
+//             const m = haversineMeters(S.routeA, S.routeB);
+//             const walkMin = Math.max(2, Math.round(m / 75));
+//             const bikunMin = Math.max(2, Math.round(m / 320) + 2);
+//             $("route-info").innerHTML = `🚌 <b>${S.routeA} → ${S.routeB}</b>: ~${m} m (🚶 ${walkMin} mnt / 🚌 Bikun ±${bikunMin} mnt)`;
+//           }
+//           drawBikunMap();
+//           return;
+//         }
+
+//         if (node.fac) {
+//           bukaDenahFakultas(node.fac, true);
+//         } else {
+//           toast(`🚏 Halte <b>${node.label}</b> — ketuk pin fakultas untuk melihat kantin.`);
+//         }
+//       };
+
+//       function drawBikunMap() {
+//         const svg = $("ui-map");
+//         if (!svg) return;
+//         let routeLine = "";
+//         if (S.routeA && S.routeB) {
+//           const na = MAP_NODES.find(n => n.id === S.routeA);
+//           const nb = MAP_NODES.find(n => n.id === S.routeB);
+//           if (na && nb) {
+//             routeLine = `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}" stroke="#f0a800" stroke-width="8" stroke-dasharray="14 10" stroke-linecap="round"/>`;
+//           }
+//         }
+
+//         svg.innerHTML = `
+//           <g transform="translate(235, 225)">
+//             <circle cx="0" cy="0" r="42" fill="#ffffff" stroke="#64748b" stroke-width="2"/>
+//             <text x="0" y="-12" text-anchor="middle" font-size="14" font-weight="800" fill="#475569">U N</text>
+//             <polygon points="0,-6 14,22 0,14 -14,22" fill="#c87272"/>
+//           </g>
+//           <path d="M 340 112 L 645 112 Q 704 112 704 170 L 704 895 Q 704 965 635 965 L 470 965 Q 430 965 395 930 L 375 910 Q 345 892 295 892 L 235 892 Q 166 892 166 820 L 166 445 Q 166 372 240 372 L 635 372 Q 704 372 704 305"
+//             fill="none" stroke="#c0202e" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+//           <path d="M 340 128 L 630 128 Q 676 128 676 175 L 676 815 Q 676 865 620 865 L 250 865 Q 194 865 194 810 L 194 450 Q 194 398 250 398 L 620 398 Q 676 398 676 345"
+//             fill="none" stroke="#1f3b9d" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+//           <path d="M 736 285 L 736 450" stroke="#c0202e" stroke-width="4"/>
+//           <path d="M 134 730 L 134 490" stroke="#c0202e" stroke-width="4"/>
+//           <path d="M 635 934 L 475 934" stroke="#c0202e" stroke-width="4"/>
+//           <path d="M 595 424 L 275 424" stroke="#1f3b9d" stroke-width="4"/>
+//           <path d="M 224 490 L 224 735" stroke="#1f3b9d" stroke-width="4"/>
+//           <path d="M 385 894 L 595 894" stroke="#1f3b9d" stroke-width="4"/>
+//           <path d="M 648 630 L 648 475" stroke="#1f3b9d" stroke-width="4"/>
+//           ${routeLine}
+//           ${MAP_NODES.map(n => {
+//             const isSel = (n.fac && S.facFilter === n.fac) || S.routeA === n.id || S.routeB === n.id;
+//             const r = n.big ? 16 : 9;
+//             const fill = isSel ? "#f0a800" : "#ffffff";
+//             const stroke = n.fac ? "#141824" : "#1f3b9d";
+//             return `
+//             <g class="node-pin" onclick="handleMapNodeClick('${n.id}')">
+//               <circle cx="${n.x}" cy="${n.y}" r="${r + 10}" fill="transparent"/>
+//               <circle class="ring" cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${n.big ? 4.5 : 3.5}"/>
+//               <text x="${n.lx}" y="${n.ly}" text-anchor="${n.anchor}" font-size="${n.big ? 21 : 17}" font-weight="${n.fac ? 800 : 600}" fill="currentColor">${n.label}</text>
+//             </g>`;
+//           }).join("")}
+//         `;
+//       }
+
+//       function setupMapGestures() {
+//         const box = $("map-box");
+//         if (!box) return;
+//         const onDown = (cx, cy) => { mapView.dragging = true; mapView.moved = false; mapView.sx = cx; mapView.sy = cy; };
+//         const onMove = (cx, cy) => {
+//           if (!mapView.dragging) return;
+//           const dx = cx - mapView.sx, dy = cy - mapView.sy;
+//           if (Math.abs(dx) > 4 || Math.abs(dy) > 4) mapView.moved = true;
+//           const rect = box.getBoundingClientRect();
+//           mapView.x -= (dx / rect.width) * mapView.w;
+//           mapView.y -= (dy / rect.height) * mapView.h;
+//           mapView.sx = cx;
+//           mapView.sy = cy;
+//           applyMapViewBox();
+//         };
+//         const onUp = () => { mapView.dragging = false; setTimeout(() => { mapView.moved = false; }, 60); };
+
+//         box.addEventListener("mousedown", e => { if (!e.target.closest(".map-ctrls")) onDown(e.clientX, e.clientY); });
+//         window.addEventListener("mousemove", e => onMove(e.clientX, e.clientY));
+//         window.addEventListener("mouseup", onUp);
+//         box.addEventListener("touchstart", e => { if (!e.target.closest(".map-ctrls") && e.touches.length === 1) onDown(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+//         box.addEventListener("touchmove", e => { if (mapView.dragging && e.touches.length === 1) onMove(e.touches[0].clientX, e.touches[0].clientY); }, { passive: true });
+//         box.addEventListener("touchend", onUp);
+//       }
+
+//       // =====================================================================
+//       // LOGIKA DENAH KANTIN FAKULTAS (MUNCUL SAAT KANTIN FAKULTAS DIPILIH)
+//       // =====================================================================
+//       function renderDenah() {
+//         const sec = $("denah");
+//         if (!sec) return;
+//         if (!S.denahFac) {
+//           sec.classList.remove("on");
+//           return;
+//         }
+//         sec.classList.add("on");
+//         $("denah-title").textContent = `📐 Denah ${FACULTY_META[S.denahFac]?.full || S.denahFac}`;
+
+//         const tList = TENANTS.filter(t => t.fac === S.denahFac).sort((a, b) => a.stallNo - b.stallNo);
+//         const half = Math.ceil(tList.length / 2);
+//         const topStalls = tList.slice(0, half);
+//         const bottomStalls = tList.slice(half);
+
+//         const stallCard = t => {
+//           const loves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
+//           return `
+//           <div class="fp-stall" tabindex="0" onclick="openTenant(${t.id})" onkeydown="if(event.key==='Enter')openTenant(${t.id})">
+//             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+//               <span class="fac-pill" style="margin:0">Stan #0${t.stallNo}</span>
+//               <span style="font-size:11px;font-weight:800;color:var(--rd)">❤️ ${loves}</span>
+//             </div>
+//             <div style="font-weight:800;font-size:13px;line-height:1.25">${t.name}</div>
+//             <div class="mu" style="font-size:11px;margin-top:2px">${t.sp} · ${t.menu.length} menu</div>
+//             <div style="font-size:11px;font-weight:800;color:var(--bl);margin-top:5px">Lihat Menu →</div>
+//           </div>`;
+//         };
+
+//         $("denah-board").innerHTML = `
+//           <div class="floorplan-wrap">
+//             <div class="fp-door">🚪 Pintu Masuk Utama · ${FACULTY_META[S.denahFac]?.full || S.denahFac}</div>
+//             <div class="fp-corridor-label">⬇ Lorong Masuk &amp; Area Stan Depan ⬇</div>
+//             <div class="fp-grid">
+//               ${topStalls.map(stallCard).join("")}
+//               <div class="fp-center-zone">
+//                 <div style="text-align:center;font-size:11px;font-weight:800;color:var(--tx);margin-bottom:6px">
+//                   🪑 Area Makan Mahasiswa (${FACULTY_META[S.denahFac]?.spot || "Ruang Utama"})
+//                 </div>
+//                 <div class="fp-tables">
+//                   <div class="fp-table-unit">🍽️ Meja A1–A4<div style="font-size:9px;color:var(--mu)">Kapasitas 16 org</div></div>
+//                   <div class="fp-table-unit">🍽️ Meja B1–B4<div style="font-size:9px;color:var(--mu)">Kapasitas 16 org</div></div>
+//                   <div class="fp-table-unit">🍽️ Meja C1–C4<div style="font-size:9px;color:var(--mu)">Area Kipas / Colokan</div></div>
+//                 </div>
+//                 <div class="fp-facilities">
+//                   <div class="fp-fac-box">🚰 Wastafel &amp; Sabun<div style="font-size:9px;font-weight:600">Sisi Kiri Lorong</div></div>
+//                   <div class="fp-fac-box pickup">📱 Meja Ambil QRIS<div style="font-size:9px;font-weight:600">Bebas Antre Tunai</div></div>
+//                   <div class="fp-fac-box trash">♻️ Tempat Sampah<div style="font-size:9px;font-weight:600">Organik &amp; Anorganik</div></div>
+//                 </div>
+//               </div>
+//               ${bottomStalls.map(stallCard).join("")}
+//             </div>
+//             <div class="fp-corridor-label" style="margin-top:8px">⬇ Lorong Belakang &amp; Akses Keluar ⬇</div>
+//             <div class="fp-door exit">🌿 Pintu Keluar / Akses Selasar Fakultas</div>
+//           </div>
+//         `;
+//       }
+
+//       // =====================================================================
+//       // LOGIKA KANTIN, TENANT & SISTEM LOVE ❤️
+//       // =====================================================================
+//       window.toggleLoveMenu = function(tid, menuIdx, ev) {
+//         if (ev) ev.stopPropagation();
+//         const t = TENANTS.find(x => x.id === tid);
+//         if (!t || !t.menu[menuIdx]) return;
+//         const key = `${tid}_${menuIdx}`;
+//         if (LOVED_KEYS[key]) {
+//           delete LOVED_KEYS[key];
+//           t.menu[menuIdx].loves = Math.max(0, (t.menu[menuIdx].loves || 1) - 1);
+//         } else {
+//           LOVED_KEYS[key] = true;
+//           t.menu[menuIdx].loves = (t.menu[menuIdx].loves || 0) + 1;
+//           toast(`❤️ Kamu menyukai <b>${t.menu[menuIdx].name}</b>!`);
+//         }
+//         saveLoved();
+//         saveTenants();
+//         render();
+//         if ($("md").classList.contains("on") && window._openedTenantId === tid) openTenant(tid);
+//       };
+
+//       function render() {
+//         const cats = ["Semua", "Ayam", "Nasi", "Mie", "Minuman", "Snack", "Sehat"];
+//         $("cat-tabs").innerHTML = cats.map(c =>
+//           `<button type="button" class="chip ${S.catFilter === c ? "on" : ""}" onclick="setCat('${c}')">${c}</button>`
+//         ).join("");
+
+//         $("fac-filter-label").innerHTML = S.facFilter === "ALL"
+//           ? "Semua Fakultas"
+//           : `Filter: <b>${S.facFilter}</b> <a href="#" onclick="focusMapCenter();return false" style="color:var(--rd);font-weight:800">(Reset)</a>`;
+
+//         const kw = ($("q")?.value || "").trim().toLowerCase();
+//         const facsToShow = S.facFilter === "ALL" ? Object.keys(FACULTY_META) : [S.facFilter];
+
+//         const rankedFacs = facsToShow
+//           .map(fac => {
+//             const tenants = TENANTS.filter(t => t.fac === fac)
+//               .map(t => ({ ...t, totalLoves: t.menu.reduce((s, m) => s + (m.loves || 0), 0) }))
+//               .filter(t => {
+//                 const matchCat = S.catFilter === "Semua" || t.menu.some(m => m.cat === S.catFilter);
+//                 const matchKw = !kw || t.name.toLowerCase().includes(kw) || t.fac.toLowerCase().includes(kw) || t.menu.some(m => m.name.toLowerCase().includes(kw));
+//                 return matchCat && matchKw;
+//               })
+//               .sort((a, b) => b.totalLoves - a.totalLoves);
+//             const facLoves = tenants.reduce((s, t) => s + t.totalLoves, 0);
+//             return { fac, tenants, facLoves };
+//           })
+//           .filter(g => g.tenants.length > 0)
+//           .sort((a, b) => b.facLoves - a.facLoves);
+
+//         $("list").innerHTML = rankedFacs.length
+//           ? rankedFacs.map((g, idx) => {
+//               const dishTiles = [];
+//               g.tenants.forEach(t => t.menu.forEach((m, mIdx) => dishTiles.push({ tid: t.id, tName: t.name, hue: t.hue + mIdx * 20, m })));
+//               dishTiles.sort((a, b) => (b.m.loves || 0) - (a.m.loves || 0));
+//               const topDishes = dishTiles.slice(0, 6);
+
+//               return `
+//               <div class="fac-card">
+//                 <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+//                   <div>
+//                     ${idx === 0 ? '<span class="badge-st" style="background:#fef3c7;color:#b45309">🏆 Kantin Paling Banyak Di-Love</span>' : ""}
+//                     <h3 style="margin:4px 0 2px;font-size:16.5px">${FACULTY_META[g.fac]?.full || g.fac}</h3>
+//                     <div class="mu">${g.tenants.length} Tenant · ❤️ <b>${g.facLoves} Total Love</b></div>
+//                   </div>
+//                   <button type="button" class="chip on" onclick="bukaDenahFakultas('${g.fac}', true)">📐 Denah Kantin →</button>
+//                 </div>
+
+//                 <div style="font-size:11px;color:var(--mu);margin-top:8px">Arahkan kursor / ketuk foto untuk info menu &amp; harga:</div>
+//                 <div class="collage-grid">
+//                   ${topDishes.map((d, i) => `
+//                     <div class="col-tile" tabindex="0" onclick="openTenant(${d.tid})">
+//                       ${foodPhotoHTML(d.m.name, d.m.cat, d.hue, d.tid + i, d.m.img)}
+//                       <div class="col-overlay">
+//                         <b>${d.m.name}</b>
+//                         <span>${rp(d.m.price)} · ❤️ ${d.m.loves || 0}</span>
+//                         <small>Stan: ${d.tName}</small>
+//                       </div>
+//                     </div>
+//                   `).join("")}
+//                 </div>
+
+//                 <div style="font-weight:800;font-size:12.5px;margin:10px 0 6px">Daftar Tenant (${g.tenants.length} Stan):</div>
+//                 <div class="t-strip">
+//                   ${g.tenants.map(t => {
+//                     const thumbs = [0, 1, 2].map(k => t.menu[k % t.menu.length]);
+//                     return `
+//                     <div class="t-card" onclick="openTenant(${t.id})">
+//                       <div class="t-mini-collage">
+//                         ${thumbs.map((m, k) => foodPhotoHTML(m.name, m.cat, t.hue + k * 25, t.id + k, m.img)).join("")}
+//                       </div>
+//                       <b style="font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</b>
+//                       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
+//                         <span class="mu" style="font-size:11px">Stan #0${t.stallNo} · ${t.sp}</span>
+//                         <span style="font-size:11.5px;font-weight:800;color:var(--rd)">❤️ ${t.totalLoves}</span>
+//                       </div>
+//                       <div style="font-size:11px;font-weight:800;color:var(--bl);margin-top:4px">Klik lihat ${t.menu.length} menu →</div>
+//                     </div>`;
+//                   }).join("")}
+//                 </div>
+//               </div>`;
+//             }).join("")
+//           : '<div class="card" style="text-align:center"><p class="mu">Menu atau tenant yang dicari tidak ditemukan.</p></div>';
+//       }
+
+//       window.setCat = function(c) { S.catFilter = c; render(); };
+
+//       // Membuka modal detail menu suatu tenant lengkap dengan tombol Love & stok habis
+//       window.openTenant = function(tid) {
+//         window._openedTenantId = tid;
+//         const t = TENANTS.find(x => x.id === tid);
+//         if (!t) return;
+//         const totalLoves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
+
+//         show(`
+//           <div style="padding-right:38px">
+//             <span class="fac-pill">${FACULTY_META[t.fac]?.full || t.fac} · Stan #0${t.stallNo}</span>
+//             <h2 style="margin:4px 0;font-size:18.5px">${t.name}</h2>
+//             <div class="mu">${t.desc} · ❤️ <b>${totalLoves} Love</b></div>
+//           </div>
+//           <div style="margin-top:12px">
+//             ${t.menu.map((m, idx) => {
+//               const isLoved = !!LOVED_KEYS[`${t.id}_${idx}`];
+//               return `
+//               <div class="mi ${m.soldOut ? "soldout" : ""}">
+//                 <div class="ph m">${foodPhotoHTML(m.name, m.cat, t.hue + idx * 24, t.id + idx, m.img)}</div>
+//                 <div class="x">
+//                   <b>${m.name}</b>
+//                   <div style="font-weight:800;color:var(--bl);font-size:13.5px">${rp(m.price)}</div>
+//                   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+//                     <button type="button" class="love-btn ${isLoved ? "loved" : ""}" onclick="toggleLoveMenu(${t.id}, ${idx}, event)">
+//                       ${isLoved ? "❤️" : "🤍"} ${m.loves || 0}
+//                     </button>
+//                     ${m.soldOut ? '<span class="sold-badge">STOK HABIS</span>' : ""}
+//                   </div>
+//                 </div>
+//                 <div>
+//                   ${m.soldOut
+//                     ? '<button type="button" class="btn g" disabled style="opacity:0.5;cursor:not-allowed;font-size:11px">Habis</button>'
+//                     : `<button type="button" class="btn" onclick="addToCart(${t.id}, ${idx})">+ Pesan</button>`}
+//                 </div>
+//               </div>`;
+//             }).join("")}
+//           </div>
+//         `);
+//       };
+
+//       // =====================================================================
+//       // KERANJANG, CATATAN & CHECKOUT QRIS
+//       // =====================================================================
+//       window.addToCart = function(tid, idx) {
+//         const t = TENANTS.find(x => x.id === tid);
+//         if (!t || !t.menu[idx] || t.menu[idx].soldOut) { toast("❌ Maaf, menu ini sedang habis."); return; }
+//         const m = t.menu[idx];
+//         const ex = S.cart.find(c => c.tid === tid && c.name === m.name);
+//         if (ex) ex.qty += 1;
+//         else S.cart.push({ tid: t.id, tName: t.name, fac: t.fac, name: m.name, price: m.price, qty: 1, note: "" });
+//         updateAllCartBars(true);
+//         toast(`🛒 <b>${m.name}</b> masuk keranjang!`);
+//       };
+
+//       function updateAllCartBars(showBar = true) {
+//         const cnt = S.cart.reduce((s, c) => s + c.qty, 0);
+//         const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
+//         $("cb-cnt").textContent = `${cnt} item di keranjang`;
+//         $("cb-tot").textContent = rp(tot);
+//         $("cbar").classList.toggle("on", cnt > 0 && showBar && !$("seller-portal-view").classList.contains("on"));
+//       }
+
+//       window.updateItemNote = function(i, val) { if (S.cart[i]) S.cart[i].note = val; };
+//       window.ubahQtyCart = function(i, delta) {
+//         if (!S.cart[i]) return;
+//         S.cart[i].qty += delta;
+//         if (S.cart[i].qty <= 0) S.cart.splice(i, 1);
+//         updateAllCartBars(true);
+//         openCart();
+//       };
+
+//       window.openCart = function() {
+//         if (!S.cart.length) { hideModal(); return; }
+//         const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
+//         show(`
+//           <h2 style="margin:0 0 8px;font-size:18px">🛒 Keranjang &amp; Catatan Pesanan</h2>
+//           ${S.cart.map((c, i) => `
+//             <div style="border:1px solid var(--bd);border-radius:13px;padding:10px;margin-bottom:8px;background:var(--bg)">
+//               <div style="display:flex;justify-content:space-between;align-items:center">
+//                 <div><b>${c.name}</b><div class="mu">${c.tName} · ${rp(c.price)}</div></div>
+//                 <div style="display:flex;align-items:center;gap:6px">
+//                   <button type="button" class="chip" onclick="ubahQtyCart(${i}, -1)">−</button>
+//                   <b>${c.qty}</b>
+//                   <button type="button" class="chip" onclick="ubahQtyCart(${i}, 1)">+</button>
+//                 </div>
+//               </div>
+//               <input value="${c.note || ""}" oninput="updateItemNote(${i}, this.value)"
+//                 placeholder="Catatan item (mis. pedas sedang, tanpa daun bawang)..."
+//                 style="width:100%;margin-top:6px;padding:7px 10px;border-radius:9px;border:1px solid var(--bd);background:var(--card);font-size:12px">
+//             </div>
+//           `).join("")}
+//           <div style="margin-top:8px">
+//             <label style="font-size:12px;font-weight:800">Nama Pemesan</label>
+//             <input id="buyer-name" value="Mahasiswa UI" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:3px">
+//           </div>
+//           <div style="margin-top:8px">
+//             <label style="font-size:12px;font-weight:800">📝 Catatan Tambahan Pesanan (Opsional)</label>
+//             <input id="order-note" placeholder="Mis. bungkus dipisah, sendok 2..." style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:3px">
+//           </div>
+//           <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0;padding-top:10px;border-top:1px solid var(--bd)">
+//             <span>Total Pembayaran QRIS</span>
+//             <b style="font-size:18px;color:var(--gr)">${rp(tot)}</b>
+//           </div>
+//           <button type="button" class="btn gr" style="width:100%;font-size:14.5px" onclick="bayarQRIS()">📱 Bayar dengan QRIS Sekarang</button>
+//         `);
+//       };
+
+//       function bunyikanBel() {
+//         try {
+//           const ctx = new (window.AudioContext || window.webkitAudioContext)();
+//           [587.33, 880].forEach((f, i) => {
+//             const o = ctx.createOscillator(), g = ctx.createGain();
+//             o.frequency.value = f;
+//             g.gain.setValueAtTime(0.18, ctx.currentTime + i * 0.14);
+//             g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.14 + 0.35);
+//             o.connect(g); g.connect(ctx.destination);
+//             o.start(ctx.currentTime + i * 0.14); o.stop(ctx.currentTime + i * 0.14 + 0.35);
+//           });
+//         } catch (e) {}
+//       }
+
+//       window.bayarQRIS = function() {
+//         if (!S.cart.length) return;
+//         const nama = ($("buyer-name")?.value || "Mahasiswa UI").trim();
+//         const note = ($("order-note")?.value || "").trim();
+//         const tot = S.cart.reduce((s, c) => s + c.price * c.qty, 0);
+//         const itemsStr = S.cart.map(c => `${c.qty}x ${c.name}`).join(", ");
+//         const first = S.cart[0];
+//         const orderId = "QRIS-" + Math.floor(1000 + Math.random() * 9000);
+//         const now = new Date();
+
+//         const newOrder = {
+//           id_pesanan: orderId, tid: first.tid, tName: first.tName, fac: first.fac,
+//           nama, note, items: itemsStr, detailItems: JSON.parse(JSON.stringify(S.cart)),
+//           total: tot, payment: "LUNAS QRIS", status: "Menunggu Konfirmasi",
+//           confirmed: false, chat: [], waktu: now.toTimeString().slice(0, 5), tanggal: TD()
+//         };
+
+//         loadOrders();
+//         ORDERS.unshift(newOrder);
+//         saveOrders();
+
+//         EXPENSES.push({ date: TD(), amt: tot, note: `[${orderId}] ${itemsStr} (${first.tName})`, cat: "Makan berat" });
+//         saveExpenses();
+
+//         S.cart = [];
+//         updateAllCartBars(false);
+//         bunyikanBel();
+//         renderTrackerPembeli();
+//         renderExpenses();
+
+//         show(`
+//           <div style="text-align:center;padding:8px 0">
+//             <div style="font-size:44px">✅</div>
+//             <h2 style="margin:6px 0;color:var(--gr)">Pembayaran QRIS Lunas!</h2>
+//             <p class="mu">Pesanan <b>${orderId}</b> telah dikirim ke kasir <b>${first.tName}</b>.</p>
+//             <div style="background:var(--bg);border:1px solid var(--bd);border-radius:13px;padding:10px;text-align:left;margin:10px 0">
+//               <div><b>Rincian:</b> ${itemsStr}</div>
+//               ${note ? `<div><b>Catatan:</b> "${note}"</div>` : ""}
+//               <div><b>Total:</b> ${rp(tot)}</div>
+//             </div>
+//             <div style="display:flex;gap:8px;margin-top:12px">
+//               <button type="button" class="btn g" style="flex:1" onclick="hideModal()">Tutup</button>
+//               <a href="portal_penjual.html" onclick="hideModal();return bukaPortalPenjual(event)" class="btn bl" style="flex:1;text-decoration:none">🏪 Buka Portal Penjual ↗</a>
+//             </div>
+//           </div>
+//         `);
+//       };
+
+//       // =====================================================================
+//       // PELACAKAN PESANAN & CHAT 2-ARAH PEMBELI ↔ PENJUAL
+//       // =====================================================================
+//       function renderTrackerPembeli() {
+//         loadOrders();
+//         const box = $("order-tracker");
+//         if (!box) return;
+//         const aktif = ORDERS.slice(0, 3);
+//         if (!aktif.length) { box.style.display = "none"; return; }
+//         box.style.display = "block";
+//         box.innerHTML = `
+//         <div class="card" style="border-color:var(--bl)">
+//           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+//             <b>🛵 Pesanan Aktif &amp; Chat Penjual</b>
+//             <a href="portal_penjual.html" onclick="return bukaPortalPenjual(event)" style="font-size:11px;font-weight:800;color:var(--bl)">Buka Portal Penjual ↗</a>
+//           </div>
+//           ${aktif.map(o => {
+//             const canChat = o.confirmed || o.status !== "Menunggu Konfirmasi";
+//             const chatCnt = (o.chat || []).length;
+//             return `
+//             <div style="border:1px solid var(--bd);border-radius:12px;padding:9px 11px;margin-top:7px;background:var(--bg)">
+//               <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+//                 <b>${o.id_pesanan} · ${o.tName}</b>
+//                 <span class="badge-st">${o.status}</span>
+//               </div>
+//               <div class="mu" style="margin:3px 0">${o.items} · <b>${rp(o.total)}</b></div>
+//               ${canChat
+//                 ? `<button type="button" class="btn bl" style="min-height:33px;padding:5px 11px;font-size:12px;margin-top:4px" onclick="bukaChatPembeli('${o.id_pesanan}')">💬 Chat Penjual ${chatCnt ? `(${chatCnt} pesan)` : ""}</button>`
+//                 : `<div style="font-size:11px;color:var(--mu);margin-top:3px">⏳ Menunggu penjual mengonfirmasi pesanan agar chat aktif...</div>`}
+//             </div>`;
+//           }).join("")}
+//         </div>`;
+//       }
+
+//       window.bukaChatPembeli = function(idPesanan) {
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         const msgs = o.chat || [];
+//         show(`
+//           <div style="padding-right:38px">
+//             <span class="fac-pill">💬 Chat dengan ${o.tName}</span>
+//             <div style="font-weight:800;font-size:16px">${o.id_pesanan} · ${o.items}</div>
+//           </div>
+//           <div class="chat-box" id="buyer-chat-list">
+//             ${msgs.length ? msgs.map(m => `
+//               <div class="chat-msg ${m.sender === "buyer" ? "me" : "them"}">
+//                 <div>${m.text}</div>
+//                 <div class="chat-meta">${m.sender === "buyer" ? "Kamu" : o.tName} · ${m.time}</div>
+//               </div>
+//             `).join("") : '<div class="mu" style="text-align:center;margin:auto">Pesanan sudah dikonfirmasi penjual. Silakan kirim pesan jika perlu.</div>'}
+//           </div>
+//           <div style="display:flex;gap:7px">
+//             <input id="buyer-chat-inp" placeholder="Balas pesan penjual..." onkeydown="if(event.key==='Enter')kirimChatPembeli('${o.id_pesanan}')"
+//               style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg)">
+//             <button type="button" class="btn bl" onclick="kirimChatPembeli('${o.id_pesanan}')">Kirim</button>
+//           </div>
+//         `);
+//         const lst = $("buyer-chat-list");
+//         if (lst) lst.scrollTop = lst.scrollHeight;
+//       };
+
+//       window.kirimChatPembeli = function(idPesanan) {
+//         const txt = ($("buyer-chat-inp")?.value || "").trim();
+//         if (!txt) return;
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         o.chat = o.chat || [];
+//         o.chat.push({ sender: "buyer", text: txt, time: new Date().toTimeString().slice(0, 5) });
+//         saveOrders();
+//         bukaChatPembeli(idPesanan);
+//         renderTrackerPembeli();
+//       };
+
+//       // =====================================================================
+//       // KEPADATAN KANTIN & CATATAN PENGELUARAN
+//       // =====================================================================
+//       function renderCrowd() {
+//         $("crowd-list").innerHTML = Object.entries(FACULTY_META).map(([f, info]) => {
+//           const color = info.crowd > 75 ? "var(--rd)" : info.crowd > 60 ? "#d97706" : "var(--gr)";
+//           return `
+//           <div style="margin-bottom:9px">
+//             <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px">
+//               <b>${info.full}</b>
+//               <span style="font-weight:800;color:${color}">${info.crowd}% terisi</span>
+//             </div>
+//             <div style="height:8px;background:var(--bg);border-radius:99px;overflow:hidden;border:1px solid var(--bd)">
+//               <div style="width:${info.crowd}%;height:100%;background:${color}"></div>
+//             </div>
+//           </div>`;
+//         }).join("");
+//       }
+
+//       function renderExpenses() {
+//         const todayTot = EXPENSES.filter(e => e.date === TD()).reduce((s, e) => s + Number(e.amt || 0), 0);
+//         const allTot = EXPENSES.reduce((s, e) => s + Number(e.amt || 0), 0);
+//         $("exp-kpi").innerHTML = `
+//           <div><small>Hari Ini</small><b style="color:var(--bl)">${rp(todayTot)}</b></div>
+//           <div><small>Total Bulan Ini</small><b>${rp(allTot)}</b></div>
+//           <div><small>Transaksi</small><b>${EXPENSES.length}x</b></div>
+//         `;
+//         const days = [];
+//         for (let i = 6; i >= 0; i--) days.push(new Date(Date.now() - i * 86400000).toISOString().slice(0, 10));
+//         const vals = days.map(d => EXPENSES.filter(e => e.date === d).reduce((s, e) => s + Number(e.amt || 0), 0));
+//         const mx = Math.max(...vals, 1);
+//         $("exp-bars").innerHTML = days.map((d, i) => `
+//           <div class="bc">
+//             <small>${vals[i] ? Math.round(vals[i] / 1000) + "rb" : ""}</small>
+//             <i style="height:${Math.max(4, (vals[i] / mx) * 85)}%"></i>
+//             <span>${d.slice(8)}/${d.slice(5, 7)}</span>
+//           </div>
+//         `).join("");
+//         $("exp-list").innerHTML = EXPENSES.slice(-5).reverse().map(e => `
+//           <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12.5px">
+//             <div><b>${e.note || e.cat}</b><div class="mu" style="font-size:11px">${e.date}</div></div>
+//             <b style="color:var(--rd)">-${rp(e.amt)}</b>
+//           </div>
+//         `).join("") || '<p class="mu">Belum ada pengeluaran tercatat.</p>';
+//       }
+
+//       window.bukaTambahCatat = function() {
+//         show(`
+//           <h2 style="margin:0 0 10px;font-size:18px">➕ Tambah Catatan Pengeluaran</h2>
+//           <input id="ex-note" placeholder="Keterangan (mis. Kopi Susu Kantin FEB)" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:8px">
+//           <input id="ex-amt" type="number" step="500" placeholder="Nominal (Rp)" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:10px">
+//           <button type="button" class="btn bl" style="width:100%" onclick="simpanCatatManual()">Simpan Catatan</button>
+//         `);
+//       };
+
+//       window.simpanCatatManual = function() {
+//         const note = ($("ex-note")?.value || "Jajan Kantin").trim();
+//         const amt = Number($("ex-amt")?.value || 0);
+//         if (amt <= 0) { toast("⚠️ Masukkan nominal pengeluaran."); return; }
+//         EXPENSES.push({ date: TD(), amt, note, cat: "Jajan" });
+//         saveExpenses();
+//         renderExpenses();
+//         hideModal();
+//         toast("✅ Pengeluaran berhasil dicatat!");
+//       };
+
+//       function show(html) { $("mb").innerHTML = html; $("md").classList.add("on"); }
+//       window.hideModal = function() { $("md").classList.remove("on"); };
+//       window.navJump = function(sel, btn) {
+//         document.querySelectorAll(".bnav button").forEach(b => b.classList.remove("on"));
+//         if (btn) btn.classList.add("on");
+//         document.querySelector(sel)?.scrollIntoView({ behavior: "smooth" });
+//       };
+
+//       // =====================================================================
+//       // PORTAL PENJUAL TERINTEGRASI (LOGIN GOOGLE TERDAFTAR + PASSWORD)
+//       // =====================================================================
+//       const REGISTERED_SELLERS = [
+//         { email: "kantinclaudeholic@gmail.com", password: "claudeholic", owner: "Kantin Claudeholic", tid: 8, role: "Mitra Utama Terdaftar FIB" },
+//         { email: "warungbuimi.fib@gmail.com", password: "123", owner: "Bu Imi", tid: 8, role: "Mitra Terdaftar FIB" },
+//         { email: "ayamgeprek.ft@gmail.com", password: "123", owner: "Mas Teknik", tid: 1, role: "Mitra Terdaftar FT" },
+//         { email: "sotobetawi.feb@gmail.com", password: "123", owner: "Bang Jali", tid: 5, role: "Mitra Terdaftar FEB" },
+//         { email: "takor.fisip@gmail.com", password: "123", owner: "Teh Rani Takor", tid: 10, role: "Mitra Terdaftar FISIP" },
+//         { email: "baksomipa.ui@gmail.com", password: "123", owner: "Cak Eko", tid: 15, role: "Mitra Terdaftar FMIPA" },
+//         { email: "mbakyanti.fib@gmail.com", password: "123", owner: "Mbak Yanti", tid: 19, role: "Mitra Terdaftar FIB" },
+//         { email: "satekanhuk.fh@gmail.com", password: "123", owner: "Pak Haji Sate", tid: 13, role: "Mitra Terdaftar FH" }
+//       ];
+//       let SAVED_GOOGLE_PASSWORDS = {};
+//       try { SAVED_GOOGLE_PASSWORDS = JSON.parse(localStorage.getItem("kui_google_pwd_v1") || "{}"); } catch (e) {}
+//       function saveGooglePasswords() {
+//         try { localStorage.setItem("kui_google_pwd_v1", JSON.stringify(SAVED_GOOGLE_PASSWORDS)); } catch (e) {}
+//       }
+//       let spSeller = null;
+//       try { spSeller = JSON.parse(localStorage.getItem("kui_google_seller_v13") || "null"); } catch (e) {}
+//       let spTab = 0;
+//       let spPhotoBase64 = "";
+
+//       window.bukaPortalPenjual = function(ev) {
+//         if (ev) ev.preventDefault();
+//         $("buyer-app-shell").style.display = "none";
+//         $("cbar").classList.remove("on");
+//         $("seller-portal-view").classList.add("on");
+//         renderEmbeddedSellerPortal();
+//         window.scrollTo({ top: 0, behavior: "smooth" });
+//         return false;
+//       };
+
+//       window.tutupPortalPenjual = function() {
+//         $("seller-portal-view").classList.remove("on");
+//         $("buyer-app-shell").style.display = "block";
+//         render();
+//         renderDenah();
+//         renderTrackerPembeli();
+//         updateAllCartBars(true);
+//         window.scrollTo({ top: 0, behavior: "smooth" });
+//       };
+
+//       window.spPilihAkun = function(email) {
+//         const inpE = $("sp-google-inp"), inpP = $("sp-pass-inp"), errBox = $("sp-login-err");
+//         if (errBox) errBox.style.display = "none";
+//         if (inpE) inpE.value = email;
+//         if (inpP) { inpP.value = ""; inpP.focus(); }
+//         toast("🔑 Silakan isi password akun Google terlebih dahulu.");
+//       };
+
+//       window.spLoginGoogle = function(emailParam) {
+//         const email = (emailParam || $("sp-google-inp")?.value || "").trim().toLowerCase();
+//         const pass = ($("sp-pass-inp")?.value || "").trim();
+//         const errBox = $("sp-login-err");
+//         const showSpErr = msg => {
+//           if (errBox) { errBox.innerHTML = msg; errBox.style.display = "block"; }
+//           toast(msg, 4200);
+//         };
+//         if (!email) { showSpErr("⚠️ Pilih atau ketik email Google terlebih dahulu."); return; }
+//         const found = REGISTERED_SELLERS.find(s => s.email.toLowerCase() === email);
+//         if (!found) {
+//           showSpErr(`❌ <b>Tenant belum terdaftar.</b> Akun <b>${email}</b> belum terdaftar sebagai mitra KantinUI.`);
+//           return;
+//         }
+//         if (!pass) {
+//           showSpErr("🔑 Masukkan <b>password akun Google</b> terlebih dahulu untuk masuk.");
+//           $("sp-pass-inp")?.focus();
+//           return;
+//         }
+//         const expectedPass = SAVED_GOOGLE_PASSWORDS[email] || found.password;
+//         if (!expectedPass) {
+//           if (pass.length < 6) {
+//             showSpErr("⚠️ Password akun Google minimal <b>6 karakter</b> untuk verifikasi keamanan.");
+//             $("sp-pass-inp")?.focus();
+//             return;
+//           }
+//           SAVED_GOOGLE_PASSWORDS[email] = pass;
+//           saveGooglePasswords();
+//         } else if (pass !== expectedPass) {
+//           showSpErr(`❌ <b>Password akun Google salah!</b> Periksa kembali password untuk <b>${email}</b>.`);
+//           $("sp-pass-inp")?.focus();
+//           return;
+//         }
+//         spSeller = { email: found.email, owner: found.owner, tid: found.tid, role: found.role };
+//         localStorage.setItem("kui_google_seller_v13", JSON.stringify(spSeller));
+//         toast(`✅ Password terverifikasi! Masuk dengan Google: <b>${found.owner}</b>`);
+//         renderEmbeddedSellerPortal();
+//       };
+
+//       window.spLogoutGoogle = function() {
+//         spSeller = null;
+//         localStorage.removeItem("kui_google_seller_v13");
+//         renderEmbeddedSellerPortal();
+//       };
+
+//       window.spSetTab = function(t) { spTab = t; renderEmbeddedSellerPortal(); };
+
+//       window.spKonfirmasi = function(idPesanan) {
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         o.confirmed = true;
+//         o.status = "Dikonfirmasi & Diproses";
+//         o.chat = o.chat || [];
+//         o.chat.push({
+//           sender: "seller",
+//           text: `Halo ${o.nama}, pesanan ${o.id_pesanan} sudah kami konfirmasi dan sedang disiapkan ya!`,
+//           time: new Date().toTimeString().slice(0, 5)
+//         });
+//         saveOrders();
+//         renderEmbeddedSellerPortal();
+//         toast(`✅ Pesanan ${idPesanan} dikonfirmasi! Chat pembeli aktif.`);
+//       };
+
+//       window.spUpdateStatus = function(idPesanan, stBaru) {
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         o.confirmed = true;
+//         o.status = stBaru;
+//         saveOrders();
+//         renderEmbeddedSellerPortal();
+//         toast(`🔔 Status ${idPesanan}: <b>${stBaru}</b>`);
+//       };
+
+//       window.spToggleStok = function(tid, idx) {
+//         const t = TENANTS.find(x => x.id === tid);
+//         if (!t || !t.menu[idx]) return;
+//         t.menu[idx].soldOut = !t.menu[idx].soldOut;
+//         saveTenants();
+//         renderEmbeddedSellerPortal();
+//         toast(t.menu[idx].soldOut ? `🚫 ${t.menu[idx].name} ditandai STOK HABIS.` : `✅ ${t.menu[idx].name} tersedia kembali.`);
+//       };
+
+//       window.spHandleFoto = function(ev) {
+//         const file = ev.target.files?.[0];
+//         if (!file) return;
+//         const reader = new FileReader();
+//         reader.onload = e => {
+//           const img = new Image();
+//           img.onload = () => {
+//             const c = document.createElement("canvas");
+//             const sc = Math.min(1, 360 / img.width);
+//             c.width = img.width * sc;
+//             c.height = img.height * sc;
+//             c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+//             spPhotoBase64 = c.toDataURL("image/jpeg", 0.78);
+//             if ($("sp-foto-prev")) $("sp-foto-prev").innerHTML = `<img src="${spPhotoBase64}" style="width:90px;height:68px;object-fit:cover;border-radius:10px;margin-top:6px">`;
+//           };
+//           img.src = e.target.result;
+//         };
+//         reader.readAsDataURL(file);
+//       };
+
+//       window.spTambahMenu = function(tid) {
+//         const name = ($("sp-m-name")?.value || "").trim();
+//         const price = Number($("sp-m-price")?.value || 0);
+//         const cat = $("sp-m-cat")?.value || "Ayam";
+//         const url = ($("sp-m-url")?.value || "").trim();
+//         const imgFinal = spPhotoBase64 || url;
+//         if (!name || price <= 0) { toast("⚠️ Isi nama makanan dan harga dengan benar."); return; }
+//         const t = TENANTS.find(x => x.id === tid);
+//         if (!t) return;
+//         t.menu.push({ name, price, cat, loves: 1, soldOut: false, img: imgFinal });
+//         saveTenants();
+//         spPhotoBase64 = "";
+//         renderEmbeddedSellerPortal();
+//         toast(`✅ Menu <b>${name}</b> ditambahkan ke etalase pembeli!`);
+//       };
+
+//       window.spBukaChat = function(idPesanan) {
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         const msgs = o.chat || [];
+//         show(`
+//           <div style="padding-right:38px">
+//             <span class="fac-pill">💬 Chat dengan Pembeli (${o.nama})</span>
+//             <div style="font-weight:800;font-size:16px">${o.id_pesanan} · ${o.items}</div>
+//           </div>
+//           <div class="chat-box" id="sp-chat-list">
+//             ${msgs.map(m => `
+//               <div class="chat-msg ${m.sender === "seller" ? "me" : "them"}">
+//                 <div>${m.text}</div>
+//                 <div class="chat-meta">${m.sender === "seller" ? "Kamu (Penjual)" : o.nama} · ${m.time}</div>
+//               </div>
+//             `).join("")}
+//           </div>
+//           <div style="display:flex;gap:7px">
+//             <input id="sp-chat-inp" placeholder="Tulis pesan ke pembeli (mis. info lauk kurang)..." onkeydown="if(event.key==='Enter')spKirimChat('${o.id_pesanan}')"
+//               style="flex:1;padding:10px 12px;border-radius:12px;border:1px solid var(--bd);background:var(--bg)">
+//             <button type="button" class="btn bl" onclick="spKirimChat('${o.id_pesanan}')">Kirim</button>
+//           </div>
+//         `);
+//       };
+
+//       window.spKirimChat = function(idPesanan) {
+//         const txt = ($("sp-chat-inp")?.value || "").trim();
+//         if (!txt) return;
+//         loadOrders();
+//         const o = ORDERS.find(x => x.id_pesanan === idPesanan);
+//         if (!o) return;
+//         o.chat = o.chat || [];
+//         o.chat.push({ sender: "seller", text: txt, time: new Date().toTimeString().slice(0, 5) });
+//         saveOrders();
+//         spBukaChat(idPesanan);
+//         renderEmbeddedSellerPortal();
+//       };
+
+//       function renderEmbeddedSellerPortal() {
+//         const box = $("sp-app-body");
+//         if (!box) return;
+//         if (!spSeller) {
+//           box.innerHTML = `
+//             <div class="sp-card" style="text-align:center">
+//               <div style="font-size:34px;margin-bottom:4px">🔐</div>
+//               <h2 style="margin:0 0 6px;font-size:18px">Login Akun Google Mitra Penjual</h2>
+//               <p class="mu" style="margin:0 0 12px">Pilih atau ketik akun terdaftar lalu masukkan <b>password akun</b>.</p>
+//               <div id="sp-login-err" style="display:none;background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;border-radius:11px;padding:9px 11px;font-size:12px;text-align:left;margin-bottom:10px"></div>
+//               <div style="text-align:left">
+//                 ${REGISTERED_SELLERS.map(s => {
+//                   const t = TENANTS.find(x => x.id === s.tid);
+//                   return `<div class="sp-acc-item" onclick="spPilihAkun('${s.email}')">
+//                     <div class="sp-avatar">${s.owner.charAt(0)}</div>
+//                     <div style="flex:1;min-width:0">
+//                       <div style="font-weight:800;font-size:13px">${s.owner} · ${t ? t.name : s.role}</div>
+//                       <div style="font-size:11.5px;color:var(--bl)">${s.email}</div>
+//                     </div>
+//                     <span style="font-weight:800;font-size:11.5px;color:var(--gr)">Pilih →</span>
+//                   </div>`;
+//                 }).join("")}
+//               </div>
+//               <div style="border-top:1px solid var(--bd);padding-top:12px;margin-top:10px;text-align:left">
+//                 <input id="sp-google-inp" type="email" value="kantinclaudeholic@gmail.com" placeholder="Ketik email Google terdaftar..." style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:8px">
+//                 <input id="sp-pass-inp" type="password" placeholder="Masukkan password akun Google (min. 6 karakter)..." onkeydown="if(event.key==='Enter')spLoginGoogle()" style="width:100%;padding:10px;border-radius:11px;border:1px solid var(--bd);background:var(--bg);margin-bottom:9px">
+//                 <button type="button" class="btn bl" style="width:100%" onclick="spLoginGoogle()">Masuk ke Portal Penjual</button>
+//               </div>
+//             </div>`;
+//           return;
+//         }
+
+//         loadOrders();
+//         const t = TENANTS.find(x => x.id === spSeller.tid) || TENANTS[0];
+//         const myOrders = ORDERS.filter(o => o.tid === t.id);
+//         const totalIncome = myOrders.reduce((s, o) => s + Number(o.total || 0), 0);
+//         const totalLoves = t.menu.reduce((s, m) => s + (m.loves || 0), 0);
+
+//         let bodyHTML = "";
+//         if (spTab === 0) {
+//           bodyHTML = `<div class="sp-card">
+//             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+//               <b>🔔 Pesanan Masuk &amp; Rincian (${myOrders.length})</b>
+//               <button type="button" class="chip" onclick="bunyikanBel();toast('🔔 Tes bel notifikasi kasir!')">🔊 Tes Bel</button>
+//             </div>
+//             ${myOrders.length ? myOrders.map(o => {
+//               const isNew = o.status === "Menunggu Konfirmasi";
+//               return `<div style="border:2px solid ${isNew ? "var(--gr)" : "var(--bd)"};border-radius:14px;padding:11px;margin-bottom:10px">
+//                 <div style="display:flex;justify-content:space-between;align-items:center">
+//                   <b>${o.id_pesanan} · ${o.nama}</b>
+//                   <span class="badge-st">${o.status}</span>
+//                 </div>
+//                 <div style="font-size:12.5px;margin:6px 0">${o.items} — <b style="color:var(--gr)">${rp(o.total)}</b></div>
+//                 ${o.note ? `<div style="font-size:11.5px;color:#b45309;margin-bottom:6px">📝 Catatan: "${o.note}"</div>` : ""}
+//                 <div style="display:flex;flex-wrap:wrap;gap:6px">
+//                   ${isNew
+//                     ? `<button type="button" class="btn gr" style="min-height:34px;padding:6px 11px;font-size:12px" onclick="spKonfirmasi('${o.id_pesanan}')">✅ Konfirmasi Pesanan</button>`
+//                     : `<button type="button" class="btn bl" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spUpdateStatus('${o.id_pesanan}','Sedang Dimasak')">🍳 Dimasak</button>
+//                        <button type="button" class="btn gr" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spUpdateStatus('${o.id_pesanan}','Siap Diambil!')">🛍️ Siap</button>
+//                        <button type="button" class="btn" style="min-height:34px;padding:6px 10px;font-size:11.5px" onclick="spBukaChat('${o.id_pesanan}')">💬 Chat (${(o.chat || []).length})</button>`
+//                   }
+//                 </div>
+//               </div>`;
+//             }).join("") : '<p class="mu">Belum ada pesanan masuk. Pesan menu dari Web Pembeli untuk menguji notifikasi!</p>'}
+//           </div>`;
+//         } else if (spTab === 1) {
+//           bodyHTML = `
+//             <div class="sp-card">
+//               <b>➕ Tambah Menu Baru (+ Foto Makanan)</b>
+//               <input id="sp-m-name" placeholder="Nama Makanan / Minuman" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:8px">
+//               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">
+//                 <input id="sp-m-price" type="number" step="500" placeholder="Harga (Rp)" style="padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg)">
+//                 <select id="sp-m-cat" style="padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg)">
+//                   <option value="Ayam">Ayam</option><option value="Nasi">Nasi</option><option value="Mie">Mie</option><option value="Minuman">Minuman</option><option value="Snack">Snack</option><option value="Sehat">Sehat</option>
+//                 </select>
+//               </div>
+//               <input id="sp-m-file" type="file" accept="image/*" onchange="spHandleFoto(event)" style="width:100%;padding:8px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:6px">
+//               <input id="sp-m-url" placeholder="Atau URL Foto Makanan (opsional)" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);margin-top:6px">
+//               <div id="sp-foto-prev"></div>
+//               <button type="button" class="btn bl" style="width:100%;margin-top:8px" onclick="spTambahMenu(${t.id})">💾 Simpan Menu Baru</button>
+//             </div>
+//             <div class="sp-card">
+//               <b>📋 Daftar Menu &amp; Update Stok Habis</b>
+//               <div style="margin-top:8px">
+//                 ${t.menu.map((m, idx) => `
+//                   <div class="mi ${m.soldOut ? "soldout" : ""}">
+//                     <div class="ph m">${foodPhotoHTML(m.name, m.cat, t.hue + idx * 20, t.id + idx, m.img)}</div>
+//                     <div class="x">
+//                       <b>${m.name}</b>
+//                       <div class="mu">${rp(m.price)} · ❤️ ${m.loves || 0}</div>
+//                       ${m.soldOut ? '<span class="sold-badge">STOK HABIS</span>' : '<span class="badge-st">Tersedia</span>'}
+//                     </div>
+//                     <button type="button" class="btn ${m.soldOut ? "gr" : ""}" style="min-height:34px;padding:6px 10px;font-size:11px" onclick="spToggleStok(${t.id}, ${idx})">
+//                       ${m.soldOut ? "✅ Tersedia" : "🚫 Stok Habis"}
+//                     </button>
+//                   </div>
+//                 `).join("")}
+//               </div>
+//             </div>`;
+//         } else {
+//           bodyHTML = `<div class="sp-card">
+//             <b>💰 Pencatatan Pemasukan (${t.name})</b>
+//             <div class="kpi">
+//               <div><small>Total Pemasukan</small><b style="color:var(--gr)">${rp(totalIncome)}</b></div>
+//               <div><small>Pesanan Lunas</small><b>${myOrders.length}x</b></div>
+//               <div><small>Total Love</small><b style="color:var(--rd)">❤️ ${totalLoves}</b></div>
+//             </div>
+//             ${myOrders.map(o => `
+//               <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
+//                 <div><b>${o.id_pesanan}</b> · ${o.nama}<div class="mu">${o.items}</div></div>
+//                 <b style="color:var(--gr)">+${rp(o.total)}</b>
+//               </div>
+//             `).join("") || '<p class="mu">Belum ada transaksi masuk.</p>'}
+//           </div>`;
+//         }
+
+//         box.innerHTML = `
+//           <div class="sp-card">
+//             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+//               <div>
+//                 <span class="badge-st">✅ Google: ${spSeller.email}</span>
+//                 <div style="font-weight:800;font-size:17px;margin-top:4px">${t.name} (${t.fac})</div>
+//                 <div class="mu">Pemilik: <b>${spSeller.owner}</b> · ❤️ ${totalLoves} Love</div>
+//               </div>
+//               <button type="button" class="chip" onclick="spLogoutGoogle()">Keluar</button>
+//             </div>
+//           </div>
+//           <div class="tabs">
+//             <button type="button" class="chip ${spTab === 0 ? "on" : ""}" onclick="spSetTab(0)">🔔 Pesanan (${myOrders.length})</button>
+//             <button type="button" class="chip ${spTab === 1 ? "on" : ""}" onclick="spSetTab(1)">🍽️ Menu &amp; Stok</button>
+//             <button type="button" class="chip ${spTab === 2 ? "on" : ""}" onclick="spSetTab(2)">💰 Pemasukan</button>
+//           </div>
+//           ${bodyHTML}
+//         `;
+//       }
+
+//       window.addEventListener("storage", () => {
+//         loadTenants();
+//         loadOrders();
+//         loadExpenses();
+//         render();
+//         renderDenah();
+//         renderTrackerPembeli();
+//         renderExpenses();
+//         if ($("seller-portal-view").classList.contains("on")) renderEmbeddedSellerPortal();
+//       });
+
+//       // Jalankan seluruh komponen saat halaman pertama kali dibuka
+//       drawBikunMap();
+//       setupMapGestures();
+//       render();
+//       renderDenah();
+//       renderCrowd();
+//       renderExpenses();
+//       renderTrackerPembeli();
+//     })();
