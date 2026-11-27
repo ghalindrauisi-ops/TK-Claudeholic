@@ -1,9 +1,4 @@
-/**
- * ============================================================================
- * FILE: claudeholic.js
- * DESKRIPSI: Pengendali Interaksi Khusus Halaman Tim Kreator (claudeholic.html).
- * ============================================================================
- */
+// Untuk pengendali ClaudeHolic Page
 
 function escapeHtmlSafe(str) {
   if (str === null || str === undefined) return "";
