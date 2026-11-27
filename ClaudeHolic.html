@@ -1,11 +1,313 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id" class="scroll-smooth">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClaudeHolic </title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="ClaudeHolic — Tim kreator di balik platform kolaborasi mahasiswa SINFO. Universitas Indonesia." />
+  <title>ClaudeHolic — Di Balik SINFO.</title>
+
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN & Konfigurasi Tema -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Efek Spotlight Kursor pada Kartu Kreator -->
+  <style>
+    .creator-card {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+    }
+    .creator-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--mx, 50%) var(--my, 30%), rgba(56, 189, 248, 0.22), transparent 65%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+      pointer-events: none;
+    }
+    .creator-card:hover::before {
+      opacity: 1;
+    }
+    .creator-card:hover {
+      transform: translateY(-8px);
+      border-color: #38bdf8;
+      box-shadow: 0 24px 50px rgba(14, 165, 233, 0.28);
+    }
+  </style>
 </head>
-<body>
-    
+<body class="min-h-screen flex flex-col bg-[#060b19] text-slate-50 antialiased selection:bg-sky-500 selection:text-slate-950">
+
+  <!-- =====================================================================
+       01. [EDIT TEKS] TOP STICKY NAVBAR (Responsif & Presisi di Semua Layar)
+       ===================================================================== -->
+  <header class="sticky top-0 z-40 w-full bg-[#060b19]/90 backdrop-blur-lg border-b border-white/10">
+    <div class="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3">
+
+      <!-- Kiri: Tombol Kembali ke SINFO (index.html) + Identitas ClaudeHolic -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <a
+          href="index.html"
+          class="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/10 hover:bg-blue-600 text-white text-xs sm:text-sm font-bold whitespace-nowrap shrink-0 border border-white/15 hover:border-blue-500 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400">
+          <span aria-hidden="true">←</span>
+          <span class="sm:hidden">SINFO.</span>
+          <span class="hidden sm:inline">Kembali ke SINFO</span>
+        </a>
+
+        <span class="inline-flex items-center gap-1.5 font-display font-bold text-base sm:text-lg whitespace-nowrap shrink-0 bg-gradient-to-r from-white to-sky-400 bg-clip-text text-transparent">
+          <span class="text-amber-400" aria-hidden="true">✦</span>
+          <span>ClaudeHolic</span>
+        </span>
+      </div>
+
+      <!-- Tengah: Anchor Navigasi Bagian Halaman -->
+      <nav aria-label="Navigasi Bagian ClaudeHolic" class="hidden md:flex items-center gap-6 text-xs font-semibold text-slate-300 whitespace-nowrap">
+        <a href="#tentang-sinfo" class="hover:text-sky-300 transition">Tentang SINFO</a>
+        <a href="#fitur-unggulan" class="hover:text-sky-300 transition">Alur Kerja</a>
+        <a href="#latar-belakang" class="hover:text-sky-300 transition">Latar Belakang</a>
+        <a href="#the-creators" class="hover:text-sky-300 transition">Tim Kreator</a>
+      </nav>
+
+      <!-- Kanan: Tombol Saran -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          type="button"
+          onclick="openFeedbackModal()"
+          class="inline-flex items-center gap-1.5 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs sm:text-sm whitespace-nowrap shrink-0 shadow-lg shadow-amber-500/20 transition transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">
+          <span class="sm:hidden">Saran</span>
+          <span class="hidden sm:inline">Kirim Saran</span>
+          <span aria-hidden="true">✦</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================================================================
+       02. KONTEN UTAMA HALAMAN CLAUDEHOLIC
+       ===================================================================== -->
+  <main class="relative flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16 overflow-hidden">
+    <!-- Dekorasi Cahaya Latar -->
+    <div class="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-700/25 blur-3xl"></div>
+    <div class="pointer-events-none absolute top-1/3 -right-24 w-96 h-96 rounded-full bg-sky-500/20 blur-3xl"></div>
+
+    <!-- [EDIT TEKS] Section 1: Hero Pengenalan -->
+    <section id="tentang-sinfo" class="relative z-10 text-center max-w-3xl mx-auto mb-16 sm:mb-20">
+      <span class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sky-400/15 border border-sky-400/30 text-sky-300 text-xs font-bold tracking-wider mb-5">
+        <span>PROYEK KOLABORASI • UNIVERSITAS INDONESIA</span>
+      </span>
+
+      <h1 class="font-display font-extrabold text-3xl sm:text-5xl lg:text-6xl leading-[1.12] tracking-tight mb-5">
+        Di Balik Platform <span class="bg-gradient-to-r from-sky-400 via-blue-300 to-amber-300 bg-clip-text text-transparent">SINFO.</span>
+      </h1>
+
+      <p class="text-slate-300 text-base sm:text-lg leading-relaxed mb-8">
+        <strong class="text-white">SINFO (Student Information &amp; Collaboration Hub)</strong> adalah ekosistem terpadu bagi mahasiswa untuk menemukan lomba, workshop, dan event kampus sekaligus membangun tim lintas fakultas berbasis keahlian terverifikasi.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-3.5">
+        <a
+          href="index.html"
+          class="px-7 py-3.5 rounded-full bg-gradient-to-r from-blue-600 to-sky-500 hover:from-blue-500 hover:to-sky-400 text-white font-bold text-sm sm:text-base shadow-lg shadow-sky-500/25 transition transform hover:-translate-y-0.5">
+          Buka Aplikasi SINFO →
+        </a>
+        <a
+          href="#the-creators"
+          class="px-7 py-3.5 rounded-full bg-white/10 hover:bg-white/15 text-white font-bold text-sm sm:text-base border border-white/15 transition">
+          Kenali Kreator ↓
+        </a>
+      </div>
+    </section>
+
+    <!-- [EDIT TEKS] Section 2: 4 Langkah Kerja Ekosistem SINFO -->
+    <section id="fitur-unggulan" class="relative z-10 mb-16 sm:mb-20">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <article class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-sky-400/60 transition">
+          <div class="w-9 h-9 rounded-xl bg-sky-400/20 text-sky-300 font-display font-bold text-sm flex items-center justify-center mb-4">01</div>
+          <h2 class="font-bold text-base text-white mb-1.5">Verifikasi SSO Kampus</h2>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Masuk cepat dengan akun mahasiswa aktif untuk menjaga kredibilitas tiap anggota dan informasi lomba.</p>
+        </article>
+
+        <article class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-sky-400/60 transition">
+          <div class="w-9 h-9 rounded-xl bg-sky-400/20 text-sky-300 font-display font-bold text-sm flex items-center justify-center mb-4">02</div>
+          <h2 class="font-bold text-base text-white mb-1.5">Cek Profil Rekan Tim</h2>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Sorot avatar anggota tim untuk pratinjau cepat keahlian, atau buka profil lengkap ala LinkedIn.</p>
+        </article>
+
+        <article class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-sky-400/60 transition">
+          <div class="w-9 h-9 rounded-xl bg-sky-400/20 text-sky-300 font-display font-bold text-sm flex items-center justify-center mb-4">03</div>
+          <h2 class="font-bold text-base text-white mb-1.5">Gabung &amp; Undang Teman</h2>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Isi slot peran yang terbuka, bangun koneksi lintas fakultas, dan kelola pelamar tim masuk.</p>
+        </article>
+
+        <article class="p-6 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-sky-400/60 transition">
+          <div class="w-9 h-9 rounded-xl bg-sky-400/20 text-sky-300 font-display font-bold text-sm flex items-center justify-center mb-4">04</div>
+          <h2 class="font-bold text-base text-white mb-1.5">Pantau Deadline Otomatis</h2>
+          <p class="text-xs sm:text-sm text-slate-400 leading-relaxed">Simpan kegiatan favoritmu dan pantau hitung mundur tenggat waktu di Pusat Notifikasi terpadu.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- [EDIT TEKS] Section 3: Latar Belakang -->
+    <section id="latar-belakang" class="relative z-10 rounded-3xl bg-gradient-to-br from-slate-900/95 to-blue-950/75 border border-sky-400/25 p-6 sm:p-10 mb-16 sm:mb-20 shadow-2xl">
+      <span class="inline-block px-3.5 py-1 rounded-full bg-sky-400/15 border border-sky-400/30 text-sky-300 text-xs font-bold mb-3">
+        LATAR BELAKANG
+      </span>
+      <h2 class="font-display font-bold text-2xl sm:text-3xl text-white mb-6">Kenapa SINFO Dibuat?</h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+        <div class="space-y-4 text-slate-300 text-sm sm:text-base leading-relaxed">
+          <p>
+            Informasi lomba, hackathon, dan workshop kampus sering tersebar di berbagai grup percakapan dan akun media sosial sehingga mahasiswa kerap melewatkan tenggat pendaftaran penting.
+          </p>
+          <p>
+            Selain itu, mencari rekan tim lintas fakultas dengan keahlian pelengkap sering kali terkendala karena belum adanya direktori portofolio mahasiswa yang terpusat. Karena itu, <strong class="text-white">ClaudeHolic</strong> merancang <strong class="text-sky-300">SINFO</strong> untuk menyatukan informasi kegiatan dan jaringan kolaborasi mahasiswa dalam satu platform.
+          </p>
+        </div>
+
+        <div class="space-y-3.5">
+          <div class="p-4 rounded-2xl bg-slate-950/70 border-l-4 border-amber-400">
+            <strong class="block text-amber-400 text-sm mb-1">📋 Informasi Terpusat &amp; Terverifikasi</strong>
+            <span class="text-xs sm:text-sm text-slate-400">Lomba, workshop, dan event dikurasi rapi dengan pengingat deadline otomatis.</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-950/70 border-l-4 border-sky-400">
+            <strong class="block text-sky-300 text-sm mb-1">🤝 Profil Rekan Tim Transparan</strong>
+            <span class="text-xs sm:text-sm text-slate-400">Kenali keahlian, pengalaman, dan prestasi calon rekan tim sebelum berkolaborasi.</span>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-950/70 border-l-4 border-emerald-400">
+            <strong class="block text-emerald-300 text-sm mb-1">🚀 Kolaborasi Lintas Jurusan</strong>
+            <span class="text-xs sm:text-sm text-slate-400">Pertemukan talenta teknologi, desain, dan bisnis dalam hitungan detik.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- [EDIT TEKS] Section 4: The Creators (Data anggota tim bisa diedit di bawah) -->
+    <section id="the-creators" class="relative z-10 text-center">
+      <span class="inline-block px-4 py-1 rounded-full bg-sky-400/15 border border-sky-400/30 text-sky-300 text-xs font-bold tracking-wider mb-3">
+        THE CREATORS
+      </span>
+      <h2 class="font-display font-bold text-3xl sm:text-4xl text-white mb-2">Tim ClaudeHolic</h2>
+      <p class="text-slate-400 text-sm sm:text-base max-w-xl mx-auto mb-10">
+        Tiga kreator di balik perancangan arsitektur, pengalaman pengguna, dan pengembangan sistem SINFO.
+      </p>
+
+      <div id="claudeholic-creators-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+  </main>
+
+  <!-- =====================================================================
+       03. [EDIT TEKS] FOOTER HALAMAN CLAUDEHOLIC
+       ===================================================================== -->
+  <footer class="relative z-10 border-t border-white/10 bg-slate-950/80 py-8 mt-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs sm:text-sm text-slate-400">
+      <div>
+        Dikembangkan dengan penuh dedikasi oleh <strong class="text-white">ClaudeHolic</strong> • Tugas Proyek DDP1
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="index.html" class="font-bold text-sky-300 hover:text-white transition">← Kembali ke SINFO.</a>
+        <button type="button" onclick="openFeedbackModal()" class="text-amber-400 hover:text-amber-300 font-semibold transition">Kirim Saran</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- =====================================================================
+       04. [EDIT TEKS] MODAL SARAN & MASUKAN INTERAKTIF
+       ===================================================================== -->
+  <div id="modal-feedback" role="dialog" aria-modal="true" aria-labelledby="modal-feedback-title" class="hidden fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-white/15 rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-4 text-left">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="inline-block px-3 py-1 rounded-full bg-amber-400/15 text-amber-300 text-xs font-bold mb-1.5">MASUKAN PENGGUNA</span>
+          <h3 id="modal-feedback-title" class="font-display font-bold text-xl text-white">Kirim Saran untuk SINFO</h3>
+        </div>
+        <button type="button" onclick="closeFeedbackModal()" aria-label="Tutup modal saran" class="p-1.5 rounded-lg text-slate-400 hover:bg-white/10 hover:text-white">✕</button>
+      </div>
+
+      <p class="text-xs sm:text-sm text-slate-400">
+        Punya ide fitur baru atau menemukan kendala? Masukanmu membantu tim ClaudeHolic menyempurnakan SINFO.
+      </p>
+
+      <form onsubmit="submitFeedbackForm(event)" class="space-y-3.5">
+        <div>
+          <label for="fb-name" class="block text-xs font-bold text-slate-300 mb-1">Nama / Fakultas (Opsional)</label>
+          <input id="fb-name" type="text" placeholder="Contoh: Raka — Fasilkom UI" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/15 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-400" />
+        </div>
+        <div>
+          <label for="fb-message" class="block text-xs font-bold text-slate-300 mb-1">Saran atau Masukan</label>
+          <textarea id="fb-message" rows="3" required placeholder="Tulis saran fitur, desain, atau kritik membangun..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-white/15 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-400"></textarea>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2">
+          <a id="external-form-link" href="#" target="_blank" rel="noopener noreferrer" class="hidden text-xs font-semibold text-sky-400 hover:underline">
+            Buka via Google Form ↗
+          </a>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="closeFeedbackModal()" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:bg-white/10">Batal</button>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs sm:text-sm font-bold shadow">Kirim Masukan</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Pemberitahuan -->
+  <div id="claudeholic-toast" role="status" aria-live="polite" class="hidden fixed bottom-6 right-4 z-50 px-4 py-3 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-xl border border-sky-400/40 flex items-center gap-2.5">
+    <span class="text-emerald-400" aria-hidden="true">✓</span>
+    <span id="claudeholic-toast-msg">Terima kasih atas saranmu!</span>
+  </div>
+
+  <!-- =====================================================================
+       05. [BAGIAN EDIT DATA KREATOR & TEKS DINAMIS CLAUDEHOLIC]
+       Edit nama, peran, username Instagram, link Instagram, dan URL foto
+       anggota tim ClaudeHolic langsung di bawah ini!
+       ===================================================================== -->
+  <script>
+    window.CLAUDEHOLIC_CREATORS = [
+      {
+        name: "Kisah",
+        role: "UI/UX Designer & Research",
+        instagram: "@kisah",
+        instagramUrl: "https://instagram.com/username_kisah",
+        photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg",
+        fallback: "https://api.dicebear.com/9.x/glass/svg?seed=Kisah"
+      },
+      {
+        name: "Cindy",
+        role: "Product Architect & Frontend",
+        instagram: "@cindy",
+        instagramUrl: "https://instagram.com/username_cindy",
+        photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg",
+        fallback: "https://api.dicebear.com/9.x/glass/svg?seed=Cindy"
+      },
+      {
+        name: "Ghalindra",
+        role: "Backend & System Integration",
+        instagram: "@ghalindra",
+        instagramUrl: "https://instagram.com/username_ghalindra",
+        photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/20240527_Karina_%28aespa%29.jpg/800px-20240527_Karina_%28aespa%29.jpg",
+        fallback: "https://api.dicebear.com/9.x/glass/svg?seed=Ghalindra"
+      }
+    ];
+  </script>
+
+  <!-- Script Data & Interaksi Khusus ClaudeHolic -->
+  <script src="data.js"></script>
+  <script src="claudeholic.js"></script>
 </body>
 </html>
